@@ -3,7 +3,7 @@ using System.Text;
 
 namespace AfterburnerViewerServerWin
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
         private const string PIPE_NAME = "ab2sd-1";
 
@@ -12,7 +12,7 @@ namespace AfterburnerViewerServerWin
         private readonly StringBuilder logBuffer = new();
         private readonly object lock_logBuffer = new();
 
-        public Form1()
+        public MainForm()
         {
             InitializeComponent();
 
@@ -97,7 +97,9 @@ namespace AfterburnerViewerServerWin
             if (String.IsNullOrEmpty(newLogs)) return;
 
             log.Text += newLogs;
-            //log.Text += newLogs.TrimEnd() + "\r\n";
+
+            log.SelectionStart = log.Text.Length;
+            log.ScrollToCaret();
         }
 
         private void btSelectABFile_Click(object sender, EventArgs e)

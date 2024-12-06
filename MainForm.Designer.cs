@@ -1,6 +1,6 @@
 ﻿namespace AfterburnerViewerServerWin
 {
-    partial class Form1
+    partial class MainForm
     {
         /// <summary>
         ///  Required designer variable.
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             measurementTimer = new System.Windows.Forms.Timer(components);
             log = new TextBox();
             toolStripContainer1 = new ToolStripContainer();
@@ -91,7 +91,7 @@
             toolStrip1.Items.AddRange(new ToolStripItem[] { btRestartIpc, toolStripSeparator1, toolStripLabel1, txtFile, btSelectABFile });
             toolStrip1.Location = new Point(3, 0);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new Size(604, 25);
+            toolStrip1.Size = new Size(635, 25);
             toolStrip1.TabIndex = 0;
             // 
             // btRestartIpc
@@ -142,13 +142,13 @@
             dlgOpen.FileName = "HardwareMonitoring.hml";
             dlgOpen.Filter = "HML Files (*.hml)|*.hml|All files (*.*)|*.*";
             // 
-            // Form1
+            // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
             Controls.Add(toolStripContainer1);
-            Name = "Form1";
+            Name = "MainForm";
             Text = "AfterburnerToStreamDeck-Server";
             FormClosed += Form1_FormClosed;
             Load += Form1_Load;
