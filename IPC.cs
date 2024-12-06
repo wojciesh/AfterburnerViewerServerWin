@@ -1,25 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO.Pipes;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace AfterburnerViewerServerWin
+﻿namespace AfterburnerViewerServerWin
 {
     public class IpcServer : IDisposable
     {
-        public readonly string PipeName;
-
-        private readonly PipeServer pipeServer;
-
-        private bool disposedValue;
-
-        public event EventHandler? OnDisconnected;
+        public event EventHandler? OnServerStarted;
+        public event EventHandler? OnServerStopped;
         public event EventHandler<string>? OnError;
         public event EventHandler? OnNewClient;
         public event EventHandler? OnClientDisconnected;
         public event EventHandler<string>? OnMessageSend;
+
+        public readonly string PipeName;
+
+        private PipeServer? pipeServer = null;
+        private bool disposedValue;
 
         public IpcServer(string pipeName)
         {
@@ -27,13 +20,53 @@ namespace AfterburnerViewerServerWin
                 throw new ArgumentException($"'{nameof(pipeName)}' cannot be null or empty.", nameof(pipeName));
 
             PipeName = pipeName;
-            pipeServer = new PipeServer(PipeName);
+            
+            StartServer();
+        }
 
-            pipeServer.OnNewClient += (s, user) =>
+        public void Write(string message)
+        {
+            pipeServer?.WriteToAllClients(message);
+        }
+
+        public void RestartServer()
+        {
+            StopServer();
+            StartServer();
+        }
+
+        protected void StartServer()
+        {
+            pipeServer = createServer();
+            pipeServer.Start();
+        }
+
+        protected void StopServer()
+        {
+            if (pipeServer != null)
+            {
+                pipeServer.Dispose();
+                pipeServer = null;
+            }
+        }
+
+        protected PipeServer createServer()
+        {
+            var pipeServer = new PipeServer(PipeName);
+
+            pipeServer.OnServerStarted += (s, e) =>
+            {
+                OnServerStarted?.Invoke(this, EventArgs.Empty);
+            };
+            pipeServer.OnServerStopped += (s, e) =>
+            {
+                OnServerStopped?.Invoke(this, EventArgs.Empty);
+            };
+            pipeServer.OnNewClient += (s, e) =>
             {
                 OnNewClient?.Invoke(this, EventArgs.Empty);
             };
-            pipeServer.OnClientDisconnected += (s, user) =>
+            pipeServer.OnClientDisconnected += (s, e) =>
             {
                 OnClientDisconnected?.Invoke(this, EventArgs.Empty);
             };
@@ -41,9 +74,11 @@ namespace AfterburnerViewerServerWin
             {
                 OnMessageSend?.Invoke(this, msg);
             };
+
+            return pipeServer;
         }
 
-        public void error(string msg)
+        protected void error(string msg)
         {
             if (OnError == null) 
                 throw new Exception(msg);
@@ -51,29 +86,19 @@ namespace AfterburnerViewerServerWin
                 OnError.Invoke(this, msg);
         }
 
-        public void Start()
-        {
-            pipeServer.Run();
-        }
-
-        public void Write(string message)
-        {
-            pipeServer.WriteToAllClients(message);
-        }
-
-        public void Stop()
-        {
-            pipeServer.Stop();
-            OnDisconnected?.Invoke(this, EventArgs.Empty);
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (disposedValue) return;
             if (disposing)
             {
-                Stop();
-                pipeServer.Dispose();
+                StopServer();
+
+                OnServerStarted = null;
+                OnServerStopped = null;
+                OnNewClient = null;
+                OnClientDisconnected = null;
+                OnMessageSend = null;
+                OnError = null;
             }
             disposedValue = true;
         }

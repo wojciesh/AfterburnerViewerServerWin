@@ -1,97 +1,159 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
 using System.IO;
 using System.IO.Pipes;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 
 namespace AfterburnerViewerServerWin
 {
     public class PipeServer : IDisposable
     {
-        bool running;
-        Thread? runningThread;
-        EventWaitHandle terminateHandle = new EventWaitHandle(false, EventResetMode.AutoReset);
-        private bool disposedValue;
-
         public string PipeName { get; }
 
+        public event EventHandler? OnServerStarted;
+        public event EventHandler? OnServerStopped;
         public event EventHandler? OnNewClient;
         public event EventHandler? OnClientDisconnected;
         public event EventHandler<string>? OnMessageSend;
 
+        private volatile bool isRunning;
+        private volatile bool isWaitingForClients;
+
+        private string? message = null;
+        private readonly object _lock_msg = new();
+
+        protected volatile Thread? runningThread;
+        protected readonly ConcurrentBag<Thread> clientThreads = [];
+        protected readonly EventWaitHandle terminateHandle = new(false, EventResetMode.AutoReset);
+        protected bool disposedValue;
+
+
         public PipeServer(string pipeName)
         {
+            if (string.IsNullOrWhiteSpace(pipeName))
+                throw new ArgumentException($"'{nameof(pipeName)}' cannot be null or whitespace.", nameof(pipeName));
+
             PipeName = pipeName;
         }
 
-        void ServerLoop()
+        public void Start()
         {
-            while (running)
-            {
-                ProcessNextClient();
-            }
+            if (isRunning || runningThread != null) return;
 
-            terminateHandle.Set();
-        }
-
-        public void Run()
-        {
-            running = true;
             runningThread = new Thread(ServerLoop);
             runningThread.Start();
         }
 
         public void Stop()
         {
-            bool breakWaiting = running;
+            isRunning = false;
 
-            running = false;
+            clearClientEvents();
 
-            if (breakWaiting)
-            {
-                Thread.Sleep(200);
-
-                //to break WaitForConnection
-                using (NamedPipeClientStream npcs = new NamedPipeClientStream(PipeName))
-                {
-                    npcs.Connect(100);
-                }
-            }
+            breakWaitForConnection();
 
             terminateHandle.WaitOne(1000);
+
+            runningThread?.Join(1000);
+            runningThread = null;
+
+            foreach (var clientThread in clientThreads)
+            {
+                clientThread.Join(1000);
+            }
+            clientThreads.Clear();
+
+            OnServerStopped?.Invoke(this, EventArgs.Empty);
         }
 
-        public virtual string ProcessRequest(string message)
+        private void breakWaitForConnection()
         {
-            return "";
+            if (isWaitingForClients)
+            {
+                // break blocking WaitForConnection
+                using NamedPipeClientStream dummy = new(PipeName);
+                dummy.Connect(100);
+            }
         }
 
-        public void ProcessClientThread(object o)
+        public void WriteToAllClients(string msg)
         {
-            NamedPipeServerStream pipeStream = (NamedPipeServerStream)o;
+            if (String.IsNullOrEmpty(msg)) return;
+
+            lock (_lock_msg)
+            {
+                message = msg;
+            }
+        }
+
+        protected void ServerLoop()
+        {
             try
             {
-                OnNewClient?.Invoke(this, EventArgs.Empty);
+                OnServerStarted?.Invoke(this, EventArgs.Empty);
 
-                string msg;
+                terminateHandle.Reset();
+                isRunning = true;
 
-                while (running && pipeStream.IsConnected)
+                while (isRunning)
+                {
+                    var clientPipe = waitForNextClient();
+                    if (clientPipe != null) 
+                        handleClientOnNewThread(clientPipe);
+                }
+
+            } finally {
+                isRunning = false;
+                terminateHandle.Set();
+            }
+        }
+
+        protected NamedPipeServerStream? waitForNextClient()
+        {
+            try
+            {
+                isWaitingForClients = true;
+
+                NamedPipeServerStream pipeStream = new(PipeName, PipeDirection.InOut, 254);
+
+                pipeStream.WaitForConnection(); // this blocks, we have to break it on dispose
+
+                return pipeStream;
+            }
+            catch (Exception)
+            {
+                //If there are no more avail connections (254 is in use already) then just keep looping until one is avail
+                return null;
+            }
+            finally
+            {
+                isWaitingForClients = false;
+            }
+        }
+
+        protected void handleClientOnNewThread(NamedPipeServerStream pipeStream)
+        {
+            // Spawn a new thread for each request and continue waiting
+            var t = new Thread(clientThread);
+            t.Start(pipeStream);
+            clientThreads.Add(t);
+        }
+
+        protected void clientThread(object? o)
+        {
+            var clientPipe = (NamedPipeServerStream)o!;
+            OnNewClient?.Invoke(this, EventArgs.Empty);
+            
+            try
+            {
+                while (isRunning && clientPipe.IsConnected)
                 {
                     Thread.Sleep(300);
-                    lock (_lock_msg)
-                    {
-                        msg = message;
-                        message = null;
-                    }
-                    if (String.IsNullOrEmpty(msg)) continue;
+                    
+                    var msg = popMessageToSend();
+                    if (String.IsNullOrEmpty(msg)) 
+                        continue;
 
-                    byte[] messageBytes = Encoding.UTF8.GetBytes(msg);
-                    pipeStream.Write(messageBytes, 0, messageBytes.Length);
-                    pipeStream.Flush();
-                    pipeStream.WaitForPipeDrain();
+                    writeToClient(clientPipe, msg);
 
                     OnMessageSend?.Invoke(this, msg);
                 }
@@ -101,43 +163,32 @@ namespace AfterburnerViewerServerWin
             }
             finally
             {
+                if (clientPipe.IsConnected)
+                    clientPipe.Disconnect();
+
+                clientPipe.Close();
+                clientPipe.Dispose();
+
                 OnClientDisconnected?.Invoke(this, EventArgs.Empty);
-
-                if (pipeStream.IsConnected)
-                    pipeStream.Disconnect();
-
-                pipeStream.Close();
-                pipeStream.Dispose();
             }
-        }
 
-        public void ProcessNextClient()
-        {
-            try
+            static void writeToClient(NamedPipeServerStream pipeStream, string msg)
             {
-                NamedPipeServerStream pipeStream = new NamedPipeServerStream(PipeName, PipeDirection.InOut, 254);
-                pipeStream.WaitForConnection();
-
-                //Spawn a new thread for each request and continue waiting
-                Thread t = new Thread(ProcessClientThread);
-                t.Start(pipeStream);
+                byte[] messageBytes = Encoding.UTF8.GetBytes(msg);
+                pipeStream.Write(messageBytes, 0, messageBytes.Length);
+                pipeStream.Flush();
+                pipeStream.WaitForPipeDrain();
             }
-            catch (Exception e)
+
+            string? popMessageToSend()
             {
-                //If there are no more avail connections (254 is in use already) then just keep looping until one is avail
-            }
-        }
-
-        private readonly object _lock_msg = new object ();
-        private string? message = null;
-
-        public void WriteToAllClients(string msg)
-        {
-            if (String.IsNullOrEmpty(msg)) return;
-
-            lock(_lock_msg)
-            {
-                message = msg;
+                string? msg;
+                lock (_lock_msg)
+                {
+                    msg = message;
+                    message = null;
+                }
+                return msg;
             }
         }
 
@@ -148,10 +199,24 @@ namespace AfterburnerViewerServerWin
                 if (disposing)
                 {
                     Stop();
-                    runningThread?.Join();
+                    clearClientEvents();
+                    clearServerEvents();
                 }
                 disposedValue = true;
             }
+        }
+
+        private void clearServerEvents()
+        {
+            OnServerStopped = null;
+            OnServerStarted = null;
+        }
+
+        private void clearClientEvents()
+        {
+            OnNewClient = null;
+            OnClientDisconnected = null;
+            OnMessageSend = null;
         }
 
         public void Dispose()
