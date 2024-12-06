@@ -1,50 +1,123 @@
-using System.IO.Pipes;
+using System.Diagnostics;
 using System.Text;
 
 namespace AfterburnerViewerServerWin
 {
     public partial class Form1 : Form
     {
+        private const string PIPE_NAME = "ab2sd-1";
+
         private readonly IpcServer ipcServer;
+
+        private readonly StringBuilder logBuffer = new();
+        private readonly object lock_logBuffer = new();
 
         public Form1()
         {
             InitializeComponent();
 
-            ipcServer = new IpcServer("ab2sd4");
-            ipcServer.OnError += (s, msg) => this.BeginInvoke(new Action(() => log.Text += $"Error: {msg}\n"));
-            ipcServer.OnDisconnected += (s, e) => this.BeginInvoke(new Action(() => log.Text += "Disconnected!\n"));
-            ipcServer.OnNewClient += (s, user) => this.BeginInvoke(new Action(() => log.Text += $"New client: {user}\n"));
-            ipcServer.OnClientDisconnected += (s, user) => this.BeginInvoke(new Action(() => log.Text += $"Client disconnected: {user}\n"));
-            ipcServer.OnMessageSend += (s, msg) => this.BeginInvoke(new Action(() => log.Text += $"Send: {msg}\n"));
+            ipcServer = new IpcServer(PIPE_NAME);
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            initIpc();
+            restartIpc();
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
-            ipcServer.Dispose();
+            destroyIpc();
         }
 
-        private void ipcTimer_Tick(object sender, EventArgs e)
+        private void sendMeasurementTimer_Tick(object sender, EventArgs e)
         {
             try
             {
                 string nowUTC = DateTime.UtcNow.ToString("HH:mm:ss");
                 ipcServer.Write(nowUTC);
-
-                //log.Text += $"Sent: {nowUTC}\n";
             }
             catch (Exception ex)
             {
-                log.Text += $"Error: {ex.Message}\n";
-                ipcServer.Dispose();
+                logMe($"Error in timer: {ex.Message}");
+                destroyIpc();
                 throw;
             }
         }
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            log.Text += "Connecting...\n";
-            ipcServer.Start();
+            restartIpc();
+        }
+
+        private void initIpc()
+        {
+            ipcServer.OnMessageSend += (s, msg) => logMe($"Send: {msg}");
+            ipcServer.OnError += (s, msg) => logMe($"Error: {msg}");
+            ipcServer.OnNewClient += (s, e) => logMe("New client connected");
+            ipcServer.OnClientDisconnected += (s, e) => logMe("Client disconnected");
+            ipcServer.OnServerStopped += (s, e) => logMe("Server stopped");
+            ipcServer.OnServerStarted += (s, e) => logMe("Server started");
+        }
+
+        private void destroyIpc()
+        {
+            ipcServer.Dispose();
+        }
+
+        private void restartIpc()
+        {
+            logMe("Restarting IPC server...");
+            ipcServer.RestartServer();
+        }
+
+        private void logMe(string msg)
+        {
+            if (String.IsNullOrEmpty(msg)) return;
+
+            msg = $"{DateTime.Now:HH:mm:ss} {msg}";
+
+            Debug.WriteLine(msg);
+
+            lock (lock_logBuffer)
+            {
+                logBuffer.AppendLine(msg);
+            }
+        }
+
+        private void logTimer_Tick(object sender, EventArgs e)
+        {
+            string newLogs;
+            lock (lock_logBuffer)
+            {
+                newLogs = logBuffer.ToString();
+                logBuffer.Clear();
+            }
+
+            if (String.IsNullOrEmpty(newLogs)) return;
+
+            log.Text += newLogs;
+            //log.Text += newLogs.TrimEnd() + "\r\n";
+        }
+
+        private void btSelectABFile_Click(object sender, EventArgs e)
+        {
+            string filePath = txtFile.Text;
+
+            if (!String.IsNullOrWhiteSpace(filePath))
+            {
+                dlgOpen.InitialDirectory = Path.GetDirectoryName(filePath);
+                dlgOpen.FileName = Path.GetFileName(filePath);
+            }
+            else
+            {
+                dlgOpen.FileName = "HardwareMonitoring.hml";
+            }
+
+            if (dlgOpen.ShowDialog() == DialogResult.OK)
+            {
+                txtFile.Text = dlgOpen.FileName;
+            }
         }
     }
 }
