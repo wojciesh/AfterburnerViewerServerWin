@@ -1,5 +1,4 @@
 ﻿using System.Collections.Concurrent;
-using System.IO;
 using System.IO.Pipes;
 using System.Text;
 
@@ -35,6 +34,7 @@ namespace AfterburnerViewerServerWin
             PipeName = pipeName;
         }
 
+
         public void Start()
         {
             if (isRunning || runningThread != null) return;
@@ -64,6 +64,7 @@ namespace AfterburnerViewerServerWin
 
             OnServerStopped?.Invoke(this, EventArgs.Empty);
         }
+
 
         private void breakWaitForConnection()
         {
@@ -191,6 +192,7 @@ namespace AfterburnerViewerServerWin
                 return msg;
             }
         }
+
 
         protected virtual void Dispose(bool disposing)
         {

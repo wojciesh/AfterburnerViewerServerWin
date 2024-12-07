@@ -5,7 +5,6 @@ namespace AfterburnerViewerServerWin
 {
     public class AfterburnerMeasurementsProvider : IMeasurementsProvider, IDisposable
     {
-
         public event EventHandler<String>? OnMeasurement;
         public event EventHandler<String>? OnError;
 

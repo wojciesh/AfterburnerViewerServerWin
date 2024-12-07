@@ -14,6 +14,7 @@
         private PipeServer? pipeServer = null;
         private bool disposedValue;
 
+
         public IpcServer(string pipeName)
         {
             if (string.IsNullOrEmpty(pipeName))
@@ -23,6 +24,7 @@
             
             StartServer();
         }
+
 
         public void Write(string message)
         {
@@ -34,6 +36,7 @@
             StopServer();
             StartServer();
         }
+
 
         protected void StartServer()
         {
@@ -85,6 +88,7 @@
             else
                 OnError.Invoke(this, msg);
         }
+
 
         protected virtual void Dispose(bool disposing)
         {

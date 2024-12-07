@@ -8,7 +8,7 @@ namespace AfterburnerViewerServerWin
         private const string PIPE_NAME = "ab2sd-1";
 
         private readonly IpcServer ipcServer;
-        private readonly IMeasurementsProvider abProvider;
+        private readonly AfterburnerMeasurementsProvider abProvider;
         private readonly StringBuilder logBuffer = new();
         private readonly object lock_logBuffer = new();
 
@@ -22,22 +22,23 @@ namespace AfterburnerViewerServerWin
             abProvider = new AfterburnerMeasurementsProvider();
             abProvider.OnMeasurement += (s, measurement) =>
             {
-                logMe($"Measurement: {measurement}");
+                LogMe($"Measurement: {measurement}");
+                ipcServer.Write(measurement);
             };
-            abProvider.OnError += (s, msg) => logMe($"Error: {msg}");
+            abProvider.OnError += (s, msg) => LogMe($"Error: {msg}");
         }
 
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            initIpc();
-            restartIpc();
+            InitIpc();
+            RestartIpc();
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
-            destroyIpc();
-            destroyMeasurements();
+            DestroyIpc();
+            DestroyMeasurements();
         }
 
 
@@ -58,45 +59,45 @@ namespace AfterburnerViewerServerWin
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            restartIpc();
+            RestartIpc();
         }
 
 
-        private bool startMeasurements(string srcFile)
+        private bool StartMeasurements(string srcFile)
         {
             abProvider.Stop(false);
             return abProvider.Start(srcFile);
         }
 
-        private void destroyMeasurements()
+        private void DestroyMeasurements()
         {
             abProvider.Dispose();
         }
 
 
-        private void initIpc()
+        private void InitIpc()
         {
-            ipcServer.OnMessageSend += (s, msg) => logMe($"Send: {msg}");
-            ipcServer.OnError += (s, msg) => logMe($"Error: {msg}");
-            ipcServer.OnNewClient += (s, e) => logMe("New client connected");
-            ipcServer.OnClientDisconnected += (s, e) => logMe("Client disconnected");
-            ipcServer.OnServerStopped += (s, e) => logMe("Server stopped");
-            ipcServer.OnServerStarted += (s, e) => logMe("Server started");
+            ipcServer.OnMessageSend += (s, msg) => LogMe($"Send: {msg}");
+            ipcServer.OnError += (s, msg) => LogMe($"Error: {msg}");
+            ipcServer.OnNewClient += (s, e) => LogMe("New client connected");
+            ipcServer.OnClientDisconnected += (s, e) => LogMe("Client disconnected");
+            ipcServer.OnServerStopped += (s, e) => LogMe("Server stopped");
+            ipcServer.OnServerStarted += (s, e) => LogMe("Server started");
         }
 
-        private void destroyIpc()
+        private void DestroyIpc()
         {
             ipcServer.Dispose();
         }
 
-        private void restartIpc()
+        private void RestartIpc()
         {
-            logMe("Restarting IPC server...");
+            LogMe("Restarting IPC server...");
             ipcServer.RestartServer();
         }
 
 
-        private void logMe(string msg)
+        private void LogMe(string msg)
         {
             if (String.IsNullOrEmpty(msg)) return;
 
@@ -147,9 +148,9 @@ namespace AfterburnerViewerServerWin
 
             var fn = dlgOpen.FileName;
             
-            if (!startMeasurements(fn))
+            if (!StartMeasurements(fn))
             {
-                logMe("Failed to start measurements for source: " + fn);
+                LogMe("Failed to start measurements for source: " + fn);
                 return;
             }
 
