@@ -1,5 +1,7 @@
 ﻿
+using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Text;
 
 namespace AfterburnerViewerServerWin
 {
@@ -45,49 +47,32 @@ namespace AfterburnerViewerServerWin
                 return false;
             }
 
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
+                    if (!isValidSource()) 
+                        throw new InvalidOperationException("Invalid source file");
+                    Debug.Assert(Source != null);
+
                     isRunning = true;
+
+                    using var sourceStream = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var sourceReader = new StreamReader(sourceStream, Encoding.UTF8);
+
+                    sourceStream.Seek(0, SeekOrigin.End);
+
                     while (isRunning)
                     {
-                        Thread.Sleep(100);
+                        await Task.Delay(100);
 
-                        if (String.IsNullOrEmpty(Source))
+                        if (String.IsNullOrEmpty(Source) || !IsUnreadDataInSource())
                             continue;
 
-                        var lastModTime = getLastModified();
+                        string? lastLine = await readNewLine(sourceReader);
 
-                        if (lastModTime == oldLastModified)
-                            continue;
-
-                        oldLastModified = lastModTime;
-
-                        using var fs = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.Read);
-                        fs.Seek(-3000, SeekOrigin.End);
-                        using var sr = new StreamReader(fs);
-
-                        List<string> lines = new();
-                        while (isRunning)
-                        {
-                            string? line = sr.ReadLine();
-                            if (line == null)
-                                break;
-
-                            line = line.Trim();
-                            if (String.IsNullOrEmpty(line))
-                                break;
-
-                            lines.Add(line);
-                        }
-
-                        var lastLine = lines.Last();
-
-                        if (String.IsNullOrEmpty(lastLine))
-                            continue;
-
-                        OnMeasurement?.Invoke(this, lastLine);
+                        if (!String.IsNullOrEmpty(lastLine))
+                            OnMeasurement?.Invoke(this, lastLine);
                     }
                 }
                 catch (Exception ex)
@@ -98,16 +83,38 @@ namespace AfterburnerViewerServerWin
                 {
                     isRunning = false;
                 }
+
+
+                bool IsUnreadDataInSource()
+                {
+                    var lastModTime = File.GetLastWriteTimeUtc(Source);
+                    if (lastModTime == oldLastModified)
+                        return false;
+
+                    oldLastModified = lastModTime;
+                    return true;
+                }
+
+                static async Task<string?> readNewLine(StreamReader reader)
+                {
+                    string? line = null;
+                    while (!reader.EndOfStream)
+                    {
+                        line = await reader.ReadLineAsync();
+                    }
+                    return line == null || line.Trim().Length == 0
+                        ? null
+                        : line;
+                }
             });
 
             return true;
         }
 
-        private DateTime getLastModified() => File.GetLastWriteTimeUtc(Source);
-
         public void Stop()
         {
             isRunning = false;
         }
+
     }
 }
