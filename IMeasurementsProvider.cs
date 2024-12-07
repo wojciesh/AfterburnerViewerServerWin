@@ -1,14 +1,14 @@
 ﻿namespace AfterburnerViewerServerWin
 {
-    public interface IMeasurementsProvider
+    public interface IMeasurementsProvider : IDisposable
     {
         event EventHandler<String>? OnMeasurement;
         event EventHandler<String>? OnError;
         
-        public string? Source { get; set; }
+        string Source { get; }
 
-        public bool isValidSource();
-        bool Start();
-        void Stop();
+        bool IsValidSource(string? source);
+        bool Start(string source);
+        bool Stop(bool notifyOnError = true);
     }
 }

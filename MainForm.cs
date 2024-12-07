@@ -12,6 +12,7 @@ namespace AfterburnerViewerServerWin
         private readonly StringBuilder logBuffer = new();
         private readonly object lock_logBuffer = new();
 
+
         public MainForm()
         {
             InitializeComponent();
@@ -21,11 +22,11 @@ namespace AfterburnerViewerServerWin
             abProvider = new AfterburnerMeasurementsProvider();
             abProvider.OnMeasurement += (s, measurement) =>
             {
-                //logMe($"Measurement: {measurement}");
-                ipcServer.Write(measurement);
+                logMe($"Measurement: {measurement}");
             };
             abProvider.OnError += (s, msg) => logMe($"Error: {msg}");
         }
+
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -36,7 +37,9 @@ namespace AfterburnerViewerServerWin
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
             destroyIpc();
+            destroyMeasurements();
         }
+
 
         private void sendMeasurementTimer_Tick(object sender, EventArgs e)
         {
@@ -58,16 +61,18 @@ namespace AfterburnerViewerServerWin
             restartIpc();
         }
 
+
         private bool startMeasurements(string srcFile)
         {
-            if (AfterburnerMeasurementsProvider.isValidSource(srcFile))
-            {
-                abProvider.Source = srcFile;
-                abProvider.Start();
-                return true;
-            }
-            return false;
+            abProvider.Stop(false);
+            return abProvider.Start(srcFile);
         }
+
+        private void destroyMeasurements()
+        {
+            abProvider.Dispose();
+        }
+
 
         private void initIpc()
         {
@@ -89,6 +94,7 @@ namespace AfterburnerViewerServerWin
             logMe("Restarting IPC server...");
             ipcServer.RestartServer();
         }
+
 
         private void logMe(string msg)
         {
@@ -121,6 +127,7 @@ namespace AfterburnerViewerServerWin
             log.ScrollToCaret();
         }
 
+
         private void btSelectABFile_Click(object sender, EventArgs e)
         {
             string filePath = txtFile.Text;
@@ -142,12 +149,11 @@ namespace AfterburnerViewerServerWin
             
             if (!startMeasurements(fn))
             {
-                logMe("Invalid source file");
+                logMe("Failed to start measurements for source: " + fn);
                 return;
             }
 
             txtFile.Text = fn;
-
         }
     }
 }

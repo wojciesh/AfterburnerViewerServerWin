@@ -1,120 +1,144 @@
 ﻿
 using System.Diagnostics;
-using System.Diagnostics.Metrics;
-using System.Text;
 
 namespace AfterburnerViewerServerWin
 {
-    public class AfterburnerMeasurementsProvider : IMeasurementsProvider
+    public class AfterburnerMeasurementsProvider : IMeasurementsProvider, IDisposable
     {
 
         public event EventHandler<String>? OnMeasurement;
         public event EventHandler<String>? OnError;
 
-        public string? Source { get; set; }
+        public string Source { get; private set; } = String.Empty;
         
         private volatile bool isRunning;
-        private DateTime oldLastModified = DateTime.MinValue;
+        private FileSystemWatcher? sourceWatcher;
+        private bool disposedValue;
 
-        public AfterburnerMeasurementsProvider() { }
 
-        public AfterburnerMeasurementsProvider(string? source)
+        public bool Start(string source)
         {
-            Source = source;
+            try
+            {
+                if (!IsValidSource(source))
+                    throw new InvalidOperationException("Invalid source file");
+                
+                if (isRunning)
+                    throw new InvalidOperationException("Already started");
+
+                Source = source;
+
+                InitSourceMonitoring();
+
+                isRunning = true;
+            }
+            catch (Exception e) 
+            {
+                OnError?.Invoke(this, e.Message);
+                return false;
+            }
+            return true;
         }
 
-        public static bool isValidSource(string? source)
+        public bool Stop(bool notifyOnError = true)
+        {
+            try
+            {
+                if (!isRunning)
+                    throw new InvalidOperationException("Cannot stop, not running");
+
+                DestroySourceMonitoring();
+
+                isRunning = false;
+            }
+            catch (Exception e)
+            {
+                if (notifyOnError) 
+                    OnError?.Invoke(this, e.Message);
+
+                return false;
+            }
+            return true;
+        }
+
+
+        private void InitSourceMonitoring()
+        {
+            if (sourceWatcher != null) 
+                throw new InvalidOperationException("Already monitoring");
+
+            Debug.Assert(Source != null);
+            sourceWatcher = new FileSystemWatcher(Path.GetDirectoryName(Source)
+                ?? throw new InvalidOperationException("Invalid source file path"))
+            {
+                Filter = Path.GetFileName(Source),
+                NotifyFilter = NotifyFilters.LastWrite
+            };
+            sourceWatcher.Changed += OnSourceWatcher_Changed;
+            sourceWatcher.EnableRaisingEvents = true;
+        }
+
+        private void DestroySourceMonitoring()
+        {
+            if (sourceWatcher == null)
+                throw new InvalidOperationException("Not monitoring");
+
+            sourceWatcher.EnableRaisingEvents = false;
+            sourceWatcher.Changed -= OnSourceWatcher_Changed;
+            sourceWatcher.Dispose();
+            sourceWatcher = null;
+        }
+
+        private async void OnSourceWatcher_Changed(object sender, FileSystemEventArgs e)
+        {
+            string? lastLine = await getLastLineAsync();
+            if (!String.IsNullOrEmpty(lastLine))
+                OnMeasurement?.Invoke(this, lastLine);
+
+
+            async Task<string?> getLastLineAsync()
+            {
+                const int defaultBuffSize = 4096;
+                using var fs = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.Read, defaultBuffSize);
+                using var sr = new StreamReader(fs, true);
+
+                fs.Seek(-defaultBuffSize, SeekOrigin.End);
+
+                string? line = null;
+                while (!sr.EndOfStream)
+                    line = await sr.ReadLineAsync();
+
+                return line == null || line.Trim().Length == 0
+                    ? null
+                    : line;
+            }
+        }
+
+
+        public bool IsValidSource(string? source)
         {
             return !String.IsNullOrWhiteSpace(source) && File.Exists(source);
         }
 
-        public bool isValidSource()
-        {
-            return AfterburnerMeasurementsProvider.isValidSource(Source);
-        }
 
-        public bool Start()
+        protected virtual void Dispose(bool disposing)
         {
-            if (isRunning)
+            if (!disposedValue)
             {
-                OnError?.Invoke(this, "Already started");
-                return false;
+                if (disposing)
+                {
+                    Stop();
+                    OnMeasurement = null;
+                    OnError = null;
+                }
+                disposedValue = true;
             }
-
-            if (!isValidSource())
-            {
-                OnError?.Invoke(this, "Invalid source file: " + Source);
-                return false;
-            }
-
-            Task.Run(async () =>
-            {
-                try
-                {
-                    if (!isValidSource()) 
-                        throw new InvalidOperationException("Invalid source file");
-                    Debug.Assert(Source != null);
-
-                    isRunning = true;
-
-                    using var sourceStream = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                    using var sourceReader = new StreamReader(sourceStream, Encoding.UTF8);
-
-                    sourceStream.Seek(0, SeekOrigin.End);
-
-                    while (isRunning)
-                    {
-                        await Task.Delay(100);
-
-                        if (String.IsNullOrEmpty(Source) || !IsUnreadDataInSource())
-                            continue;
-
-                        string? lastLine = await readNewLine(sourceReader);
-
-                        if (!String.IsNullOrEmpty(lastLine))
-                            OnMeasurement?.Invoke(this, lastLine);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    OnError?.Invoke(this, ex.Message);
-                }
-                finally
-                {
-                    isRunning = false;
-                }
-
-
-                bool IsUnreadDataInSource()
-                {
-                    var lastModTime = File.GetLastWriteTimeUtc(Source);
-                    if (lastModTime == oldLastModified)
-                        return false;
-
-                    oldLastModified = lastModTime;
-                    return true;
-                }
-
-                static async Task<string?> readNewLine(StreamReader reader)
-                {
-                    string? line = null;
-                    while (!reader.EndOfStream)
-                    {
-                        line = await reader.ReadLineAsync();
-                    }
-                    return line == null || line.Trim().Length == 0
-                        ? null
-                        : line;
-                }
-            });
-
-            return true;
         }
 
-        public void Stop()
+        public void Dispose()
         {
-            isRunning = false;
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
-
     }
 }
