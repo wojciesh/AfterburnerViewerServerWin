@@ -8,7 +8,7 @@ namespace AfterburnerViewerServerWin
         private const string PIPE_NAME = "ab2sd-1";
 
         private readonly IpcServer ipcServer;
-
+        private readonly IMeasurementsProvider abProvider;
         private readonly StringBuilder logBuffer = new();
         private readonly object lock_logBuffer = new();
 
@@ -17,6 +17,14 @@ namespace AfterburnerViewerServerWin
             InitializeComponent();
 
             ipcServer = new IpcServer(PIPE_NAME);
+
+            abProvider = new AfterburnerMeasurementsProvider();
+            abProvider.OnMeasurement += (s, measurement) =>
+            {
+                //logMe($"Measurement: {measurement}");
+                ipcServer.Write(measurement);
+            };
+            abProvider.OnError += (s, msg) => logMe($"Error: {msg}");
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -32,22 +40,33 @@ namespace AfterburnerViewerServerWin
 
         private void sendMeasurementTimer_Tick(object sender, EventArgs e)
         {
-            try
-            {
-                string nowUTC = DateTime.UtcNow.ToString("HH:mm:ss");
-                ipcServer.Write(nowUTC);
-            }
-            catch (Exception ex)
-            {
-                logMe($"Error in timer: {ex.Message}");
-                destroyIpc();
-                throw;
-            }
+            //try
+            //{
+            //    string nowUTC = DateTime.UtcNow.ToString("HH:mm:ss");
+            //    ipcServer.Write(nowUTC);
+            //}
+            //catch (Exception ex)
+            //{
+            //    logMe($"Error in timer: {ex.Message}");
+            //    destroyIpc();
+            //    throw;
+            //}
         }
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
             restartIpc();
+        }
+
+        private bool startMeasurements(string srcFile)
+        {
+            if (AfterburnerMeasurementsProvider.isValidSource(srcFile))
+            {
+                abProvider.Source = srcFile;
+                abProvider.Start();
+                return true;
+            }
+            return false;
         }
 
         private void initIpc()
@@ -116,10 +135,19 @@ namespace AfterburnerViewerServerWin
                 dlgOpen.FileName = "HardwareMonitoring.hml";
             }
 
-            if (dlgOpen.ShowDialog() == DialogResult.OK)
+            if (dlgOpen.ShowDialog() != DialogResult.OK) 
+                return;
+
+            var fn = dlgOpen.FileName;
+            
+            if (!startMeasurements(fn))
             {
-                txtFile.Text = dlgOpen.FileName;
+                logMe("Invalid source file");
+                return;
             }
+
+            txtFile.Text = fn;
+
         }
     }
 }
