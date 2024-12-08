@@ -164,7 +164,7 @@
             openToolStripButton.Name = "openToolStripButton";
             openToolStripButton.Size = new Size(23, 22);
             openToolStripButton.Text = "&Open";
-            openToolStripButton.Click += btSelectABFile_Click;
+            openToolStripButton.Click += btSelectSourceFile_Click;
             // 
             // txtFile
             // 

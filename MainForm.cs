@@ -1,38 +1,42 @@
+using Config.Net;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Text;
 
 namespace AfterburnerViewerServerWin
 {
+    [SupportedOSPlatform("windows6.1")]
     public partial class MainForm : Form
     {
         private const string PIPE_NAME = "ab2sd-1";
 
         private readonly IpcServer ipcServer;
-        private readonly AfterburnerMeasurementsProvider abProvider;
+        private readonly AfterburnerMeasurementsProvider measurementsProvider;
         private readonly StringBuilder logBuffer = new();
         private readonly object lock_logBuffer = new();
+
+        private readonly IAppConfig settings;
 
 
         public MainForm()
         {
             InitializeComponent();
 
+            settings = new ConfigurationBuilder<IAppConfig>()
+                .UseJsonFile("config.json")
+                .Build();
+
             ipcServer = new IpcServer(PIPE_NAME);
-
-            abProvider = new AfterburnerMeasurementsProvider();
-            abProvider.OnMeasurement += (s, measurement) =>
-            {
-                LogMe($"Measurement: {measurement}");
-                ipcServer.Write(measurement);
-            };
-            abProvider.OnError += (s, msg) => LogMe($"Error: {msg}");
+            measurementsProvider = CreateMeasurementsProvider();
         }
-
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            Text = $"AfterburnerToStreamDeck-Server v{Application.ProductVersion} cv: {settings.ConfigVersion}";
+            
             InitIpc();
             RestartIpc();
+            RestartMeasurements(settings.Source);
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -48,19 +52,57 @@ namespace AfterburnerViewerServerWin
         }
 
 
-        private bool StartMeasurements(string srcFile)
+        protected AfterburnerMeasurementsProvider CreateMeasurementsProvider()
         {
-            abProvider.Stop(false);
-            return abProvider.Start(srcFile);
+            var mp = new AfterburnerMeasurementsProvider();
+
+            mp.OnError += (s, msg) => LogMe($"Error: {msg}");
+
+            mp.OnMeasurement += (s, measurement) =>
+            {
+                if (String.IsNullOrEmpty(measurement))
+                    return;
+
+                ipcServer.Write(measurement);
+
+                UpdateMeasurementPreview(measurement);
+            };
+
+            return mp;
         }
 
-        private void DestroyMeasurements()
+        protected void RestartMeasurements(string? sourceFile)
         {
-            abProvider.Dispose();
+            if (SetSource(sourceFile))
+            {
+                txtFile.Text = GetSource();
+                StartMeasurements();
+            }
+            else txtFile.Clear();
+        }
+
+        protected bool StartMeasurements()
+        {
+            measurementsProvider.Stop(false);
+            return measurementsProvider.Start(GetSource());
+        }
+
+        protected void DestroyMeasurements()
+        {
+            measurementsProvider.Dispose();
+        }
+
+        protected void UpdateMeasurementPreview(string measurement)
+        {
+            this.BeginInvoke(() =>
+            {
+                try { txtMeasurementsPreview.Text = measurement; }
+                catch { }
+            });
         }
 
 
-        private void InitIpc()
+        protected void InitIpc()
         {
             ipcServer.OnMessageSend += (s, msg) => LogMe($"Send: {msg}");
             ipcServer.OnError += (s, msg) => LogMe($"Error: {msg}");
@@ -70,19 +112,19 @@ namespace AfterburnerViewerServerWin
             ipcServer.OnServerStarted += (s, e) => LogMe("Server started");
         }
 
-        private void DestroyIpc()
+        protected void DestroyIpc()
         {
             ipcServer.Dispose();
         }
 
-        private void RestartIpc()
+        protected void RestartIpc()
         {
             LogMe("Restarting IPC server...");
             ipcServer.RestartServer();
         }
 
 
-        private void LogMe(string msg)
+        protected void LogMe(string msg)
         {
             if (String.IsNullOrEmpty(msg)) return;
 
@@ -114,12 +156,27 @@ namespace AfterburnerViewerServerWin
         }
 
 
-        private void btSelectABFile_Click(object sender, EventArgs e)
+        private void btSelectSourceFile_Click(object sender, EventArgs e)
         {
-            SelectSource();
+            RestartMeasurements(GetSourceFileFromUser());
         }
 
-        private void SelectSource()
+
+        protected string GetSource()
+        {
+            return settings.Source;
+        }
+
+        protected bool SetSource(string? sourceFile)
+        {
+            if (!measurementsProvider.IsValidSource(sourceFile))
+                return false;
+            Debug.Assert(sourceFile != null);
+            settings.Source = sourceFile;
+            return true;
+        }
+
+        protected string? GetSourceFileFromUser()
         {
             string filePath = txtFile.Text;
 
@@ -134,17 +191,13 @@ namespace AfterburnerViewerServerWin
             }
 
             if (dlgOpen.ShowDialog() != DialogResult.OK)
-                return;
+                return null;
 
             var fn = dlgOpen.FileName;
 
-            if (!StartMeasurements(fn))
-            {
-                LogMe("Failed to start measurements for source: " + fn);
-                return;
-            }
-
             txtFile.Text = fn;
+
+            return fn;
         }
     }
 }
