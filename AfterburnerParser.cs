@@ -31,6 +31,9 @@ namespace AfterburnerViewerServerWin
                     measurementTypes.Add(types);
             }
 
+            if (measurementTypes.Count < typeNames.Count)
+                throw new FormatException($"Expected {typeNames.Count} measurement types definitions but found only {measurementTypes.Count}");
+
             return measurementTypes;
 
 
@@ -55,7 +58,7 @@ namespace AfterburnerViewerServerWin
                     var max = parts[i].Trim();
                     i++;
                     var valBase = parts[i].Trim();
-                    i += 2;
+                    i += 3;
                     var format = parts[i].Trim();
 
                     return new MeasurementType
@@ -88,7 +91,7 @@ namespace AfterburnerViewerServerWin
 
             var parts = measurementsLine.Split(',');
             
-            if (parts == null || parts.Length < 10)
+            if (parts == null || parts.Length < measurementTypes.Count + 2)
                 throw new FormatException("Invalid measurements format in line: " + measurementsLine);
 
             return measurementTypes.Select((type, i) => new AfterburnerMeasurement 
