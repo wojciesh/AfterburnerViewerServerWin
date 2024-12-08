@@ -42,21 +42,6 @@ namespace AfterburnerViewerServerWin
         }
 
 
-        private void sendMeasurementTimer_Tick(object sender, EventArgs e)
-        {
-            //try
-            //{
-            //    string nowUTC = DateTime.UtcNow.ToString("HH:mm:ss");
-            //    ipcServer.Write(nowUTC);
-            //}
-            //catch (Exception ex)
-            //{
-            //    logMe($"Error in timer: {ex.Message}");
-            //    destroyIpc();
-            //    throw;
-            //}
-        }
-
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
             RestartIpc();
@@ -131,6 +116,11 @@ namespace AfterburnerViewerServerWin
 
         private void btSelectABFile_Click(object sender, EventArgs e)
         {
+            SelectSource();
+        }
+
+        private void SelectSource()
+        {
             string filePath = txtFile.Text;
 
             if (!String.IsNullOrWhiteSpace(filePath))
@@ -143,11 +133,11 @@ namespace AfterburnerViewerServerWin
                 dlgOpen.FileName = "HardwareMonitoring.hml";
             }
 
-            if (dlgOpen.ShowDialog() != DialogResult.OK) 
+            if (dlgOpen.ShowDialog() != DialogResult.OK)
                 return;
 
             var fn = dlgOpen.FileName;
-            
+
             if (!StartMeasurements(fn))
             {
                 LogMe("Failed to start measurements for source: " + fn);
