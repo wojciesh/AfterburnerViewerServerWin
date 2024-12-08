@@ -4,12 +4,12 @@ namespace AfterburnerViewerServerWin
 {
     public class AfterburnerParser
     {
-        public static List<MeasurementType> ReadMeasurementTypes(StreamReader streamReader)
+        public static List<MeasurementType> ReadMeasurementTypes(TextReader reader)
         {
             List<MeasurementType> measurementTypes = [];
             List<string> typeNames = [];
             string? line;
-            while ((line = streamReader.ReadLine()) != null)
+            while ((line = reader.ReadLine()) != null)
             {
                 if (line.StartsWith("80,"))
                     break;

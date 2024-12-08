@@ -10,8 +10,8 @@ namespace AfterburnerViewerServerWin
     [SupportedOSPlatform("windows6.1")]
     public partial class MainForm : Form
     {
+        private const string APPLICATION_TITLE = "AfterburnerToStreamDeck-Server v1.0";
         private const string PIPE_NAME = "ab2sd-1";
-
         private readonly IpcServer ipcServer;
         private readonly AfterburnerMeasurementsProvider measurementsProvider;
         private readonly StringBuilder logBuffer = new();
@@ -34,8 +34,7 @@ namespace AfterburnerViewerServerWin
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Text = $"AfterburnerToStreamDeck-Server v{Application.ProductVersion} cv: {settings.configVersion}";
-            
+            Text = APPLICATION_TITLE;
             InitIpc();
             RestartIpc();
             RestartMeasurements(GetSource());
@@ -124,7 +123,7 @@ namespace AfterburnerViewerServerWin
 
         protected void InitIpc()
         {
-            ipcServer.OnMessageSend += (s, msg) => LogMe($"Send: {msg}");
+            //ipcServer.OnMessageSend += (s, msg) => LogMe($"Send: {msg}");
             ipcServer.OnError += (s, msg) => LogMe($"Error: {msg}");
             ipcServer.OnNewClient += (s, e) => LogMe("New client connected");
             ipcServer.OnClientDisconnected += (s, e) => LogMe("Client disconnected");
