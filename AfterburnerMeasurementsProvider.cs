@@ -9,7 +9,7 @@ namespace AfterburnerViewerServerWin
         public event EventHandler<String>? OnError;
 
         public string Source { get; private set; } = String.Empty;
-        
+
         private volatile bool isRunning;
         private FileSystemWatcher? sourceWatcher;
         private bool disposedValue;
@@ -101,15 +101,36 @@ namespace AfterburnerViewerServerWin
                 using var fs = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.Read, defaultBuffSize);
                 using var sr = new StreamReader(fs, true);
 
+                fs.Seek(0, SeekOrigin.Begin);
+
+                var measurementTypes = AfterburnerParser.ReadMeasurementTypes(sr);
+                if (measurementTypes == null)
+                    return null;
+
                 fs.Seek(-defaultBuffSize, SeekOrigin.End);
 
                 string? line = null;
                 while (!sr.EndOfStream)
                     line = await sr.ReadLineAsync();
 
-                return line == null || line.Trim().Length == 0
+                line = line == null || line.Trim().Length == 0
                     ? null
                     : line;
+
+                if (String.IsNullOrEmpty(line))
+                    return null;
+
+                try
+                {
+                    return AfterburnerParser.ExtractMeasurements(line, measurementTypes)
+                        .Select(m => $"{m.Type.Name}: {m.Value}")
+                        .Aggregate((a, b) => $"{a},\t{b}");
+                }
+                catch (Exception e)
+                {
+                    OnError?.Invoke(this, e.Message);
+                    return null;
+                }
             }
         }
 
