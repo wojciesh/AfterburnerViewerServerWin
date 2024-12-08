@@ -2,7 +2,7 @@
 {
     public interface IAppConfig
     {
-        string ConfigVersion { get; set; }
-        string Source { get; set; }
+        string configVersion { get; set; }
+        string source { get; set; }
     }
 }

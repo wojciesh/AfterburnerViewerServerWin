@@ -120,10 +120,11 @@
             // txtMeasurementsPreview
             // 
             txtMeasurementsPreview.Dock = DockStyle.Bottom;
-            txtMeasurementsPreview.Location = new Point(0, 22);
+            txtMeasurementsPreview.Font = new Font("Courier New", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            txtMeasurementsPreview.Location = new Point(0, 24);
             txtMeasurementsPreview.Name = "txtMeasurementsPreview";
             txtMeasurementsPreview.ReadOnly = true;
-            txtMeasurementsPreview.Size = new Size(766, 23);
+            txtMeasurementsPreview.Size = new Size(766, 21);
             txtMeasurementsPreview.TabIndex = 2;
             // 
             // toolStrip1

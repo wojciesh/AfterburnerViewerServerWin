@@ -1,7 +1,9 @@
 using Config.Net;
+using System.Configuration;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Text.Json;
 
 namespace AfterburnerViewerServerWin
 {
@@ -32,11 +34,11 @@ namespace AfterburnerViewerServerWin
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            Text = $"AfterburnerToStreamDeck-Server v{Application.ProductVersion} cv: {settings.ConfigVersion}";
+            Text = $"AfterburnerToStreamDeck-Server v{Application.ProductVersion} cv: {settings.configVersion}";
             
             InitIpc();
             RestartIpc();
-            RestartMeasurements(settings.Source);
+            RestartMeasurements(GetSource());
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -51,24 +53,42 @@ namespace AfterburnerViewerServerWin
             RestartIpc();
         }
 
-
         protected AfterburnerMeasurementsProvider CreateMeasurementsProvider()
         {
             var mp = new AfterburnerMeasurementsProvider();
 
             mp.OnError += (s, msg) => LogMe($"Error: {msg}");
 
-            mp.OnMeasurement += (s, measurement) =>
-            {
-                if (String.IsNullOrEmpty(measurement))
-                    return;
-
-                ipcServer.Write(measurement);
-
-                UpdateMeasurementPreview(measurement);
-            };
+            mp.OnNewMeasurements += HandleNewMeasurements;
 
             return mp;
+
+        }
+
+        protected void HandleNewMeasurements(object? sender, List<AfterburnerMeasurement> measurements)
+        {
+            if (measurements == null || measurements.Count == 0)
+                return;
+
+            string measurementsJson = JsonSerializer.Serialize(measurements);
+
+            ipcServer.Write(measurementsJson);
+
+            UpdateMeasurementPreview(measurements
+                .Select(m => $"{m.Type.Name}: {getFormattedValue(m)}{m.Type.Unit}")
+                .Aggregate((a, b) => $"{a} | {b}")
+            );
+
+
+            string getFormattedValue(AfterburnerMeasurement m)
+            {
+                return m.Type.Format switch
+                {
+                    "%.3f" => m.Value.ToString("F3"),
+                    "%.2f" => m.Value.ToString("F2"),
+                    _ => m.Value.ToString("F1"),
+                };
+            }
         }
 
         protected void RestartMeasurements(string? sourceFile)
@@ -164,7 +184,7 @@ namespace AfterburnerViewerServerWin
 
         protected string GetSource()
         {
-            return settings.Source;
+            return settings.source;
         }
 
         protected bool SetSource(string? sourceFile)
@@ -172,7 +192,7 @@ namespace AfterburnerViewerServerWin
             if (!measurementsProvider.IsValidSource(sourceFile))
                 return false;
             Debug.Assert(sourceFile != null);
-            settings.Source = sourceFile;
+            settings.source = sourceFile;
             return true;
         }
 
