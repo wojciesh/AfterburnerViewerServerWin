@@ -94,11 +94,11 @@ namespace AfterburnerViewerServerWin
 
         private async void OnSourceWatcher_Changed(object sender, FileSystemEventArgs e)
         {
-            const int defaultBuffSize = 4096;
-            using var fs = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.Read, defaultBuffSize);
-            using var sr = new StreamReader(fs, Encoding.Latin1, true, defaultBuffSize);
             try
             {
+                const int defaultBuffSize = 4096;
+                using var fs = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.Read, defaultBuffSize);
+                using var sr = new StreamReader(fs, Encoding.Latin1, true, defaultBuffSize);
                 fs.Seek(0, SeekOrigin.Begin);
 
                 MeasurementTypes = AfterburnerParser.ReadMeasurementTypes(sr);
@@ -114,25 +114,25 @@ namespace AfterburnerViewerServerWin
 
                 OnNewMeasurements?.Invoke(this,
                     AfterburnerParser.ExtractMeasurements(lastLine, MeasurementTypes));
+
+
+                async Task<string?> getLastLineAsync()
+                {
+                    string? line = null;
+
+                    while (!sr.EndOfStream)
+                        line = await sr.ReadLineAsync();
+
+                    line = String.IsNullOrWhiteSpace(line)
+                        ? null
+                        : line;
+
+                    return line;
+                }
             }
             catch (Exception ex)
             {
                 OnError?.Invoke(this, ex.Message);
-            }
-
-
-            async Task<string?> getLastLineAsync()
-            {
-                string? line = null;
-
-                while (!sr.EndOfStream)
-                    line = await sr.ReadLineAsync();
-
-                line = String.IsNullOrWhiteSpace(line)
-                    ? null
-                    : line;
-
-                return line;
             }
         }
 
