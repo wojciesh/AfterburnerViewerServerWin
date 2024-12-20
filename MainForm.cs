@@ -97,7 +97,17 @@ namespace AfterburnerViewerServerWin
                 txtFile.Text = GetSource();
                 StartMeasurements();
             }
-            else txtFile.Clear();
+            else
+            {
+                txtFile.Clear();
+
+                LogMe("-------------------------------------");
+                LogMe("No Afterburner History File selected.");
+                LogMe("Please follow these steps:");
+                LogMe("  1. In MSI Afterburner go to Setting -> Monitoring and enable Logging History to file");
+                LogMe("  2. Select your History Log file in the menu above");
+                LogMe("-------------------------------------");
+            }
         }
 
         protected bool StartMeasurements()
