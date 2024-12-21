@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using AfterburnerViewerServerWin.ini;
+using System.ComponentModel;
+using System.Globalization;
 
 namespace AfterburnerViewerServerWin.abconfig
 {
@@ -12,7 +10,12 @@ namespace AfterburnerViewerServerWin.abconfig
 
         public string ConfigFile { get; }
 
+        private IIniFileHandler iniFileHandler = new WinIniFileHandler();
 
+        /**
+         * @param configFile Path to the Afterburner config file or null to use the default one
+         * @throws ArgumentException if the config file is invalid
+         */
         public AfterburnerConfig(string? configFile)
         {
             ConfigFile = configFile ?? DEFAULT_CONFIG_FILE;
@@ -21,10 +24,7 @@ namespace AfterburnerViewerServerWin.abconfig
                 throw new ArgumentException("Invalid config file");
         }
 
-        public bool IsConfigFileValid()
-        {
-            return File.Exists(ConfigFile);
-        }
+        public bool IsConfigFileValid() => File.Exists(ConfigFile);
 
         public string? GetHistoryLogPath() => GetSetting<string?>("LogPath");
 
@@ -34,17 +34,37 @@ namespace AfterburnerViewerServerWin.abconfig
 
         public int? GetHistoryLogLimit() => GetSetting<int?>("LogLimit");
 
-        protected T? GetSetting<T>(string keyName)
+        protected T? GetSetting<T>(string settingKeyName)
         {
-            return default;
+            T? defaultValue = default;
+
+            if (string.IsNullOrEmpty(settingKeyName))
+                return defaultValue;
+
+            return GetSetting("Settings", settingKeyName, defaultValue);
         }
 
-        /*
-        [Settings]
-        LogPath=D:\HardwareMonitoring.hml
-        EnableLog=1
-        RecreateLog=1
-        LogLimit=0
-        */
+        protected T? GetSetting<T>(string section, string key, T? defaultValue = default)
+        {
+            string value = iniFileHandler.GetValue("Settings", key, ConfigFile);
+
+            if (string.IsNullOrWhiteSpace(value))
+                return defaultValue;
+
+            try
+            {
+                var converter = TypeDescriptor.GetConverter(typeof(T));
+                if (converter != null && converter.IsValid(value))
+                {
+                    return (T?)converter.ConvertFromString(null, CultureInfo.InvariantCulture, value);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error converting value '{value}' to type {typeof(T)}: {ex.Message}");
+            }
+
+            return defaultValue;
+        }
     }
 }
