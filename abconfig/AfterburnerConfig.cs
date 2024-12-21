@@ -13,6 +13,11 @@ namespace AfterburnerViewerServerWin.abconfig
         private IIniFileHandler iniFileHandler = new WinIniFileHandler();
 
         /**
+         * Use the default config file
+         */
+        public AfterburnerConfig() : this(DEFAULT_CONFIG_FILE) { }
+
+        /**
          * @param configFile Path to the Afterburner config file or null to use the default one
          * @throws ArgumentException if the config file is invalid
          */
