@@ -18,12 +18,14 @@ namespace AfterburnerViewerServerWin.abconfig
         public AfterburnerConfig() : this(DEFAULT_CONFIG_FILE) { }
 
         /**
-         * @param configFile Path to the Afterburner config file or null to use the default one
+         * @param configFile Path to the Afterburner config file or null/empty to use the default one
          * @throws ArgumentException if the config file is invalid
          */
         public AfterburnerConfig(string? configFile)
         {
-            ConfigFile = configFile ?? DEFAULT_CONFIG_FILE;
+            ConfigFile = String.IsNullOrEmpty(configFile) 
+                ? DEFAULT_CONFIG_FILE 
+                : configFile;
 
             if (!IsConfigFileValid())
                 throw new ArgumentException("Invalid config file");

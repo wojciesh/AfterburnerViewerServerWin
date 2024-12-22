@@ -1,3 +1,4 @@
+using AfterburnerViewerServerWin.abconfig;
 using Config.Net;
 using System.Configuration;
 using System.Diagnostics;
@@ -12,8 +13,10 @@ namespace AfterburnerViewerServerWin
     {
         private const string APPLICATION_TITLE = "AfterburnerToStreamDeck-Server v1.0";
         private const string PIPE_NAME = "ab2sd-1";
+
         private readonly IpcServer ipcServer;
-        private readonly AfterburnerMeasurementsProvider measurementsProvider;
+        private readonly IMeasurementsProvider measurementsProvider;
+        private IAfterburnerConfig? abConfigProvider;
         private readonly StringBuilder logBuffer = new();
         private readonly object lock_logBuffer = new();
 
@@ -28,8 +31,21 @@ namespace AfterburnerViewerServerWin
                 .UseJsonFile("config.json")
                 .Build();
 
+            SetAbConfig(CreateAbConfig(settings.abConfigFile));
+            
             ipcServer = new IpcServer(PIPE_NAME);
             measurementsProvider = CreateMeasurementsProvider();
+        }
+
+        private void SetAbConfig(IAfterburnerConfig? afterburnerConfig)
+        {
+            abConfigProvider = afterburnerConfig;
+
+            settings.abConfigFile = abConfigProvider == null
+                ? String.Empty
+                : abConfigProvider.ConfigFile;
+
+            txtDir.Text = Path.GetDirectoryName(settings.abConfigFile);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -37,7 +53,33 @@ namespace AfterburnerViewerServerWin
             Text = APPLICATION_TITLE;
             InitIpc();
             RestartIpc();
+
+            if (abConfigProvider == null)
+            {
+                if (String.IsNullOrEmpty(settings.abConfigFile))
+                {
+                    LogMe("-----------------------------------");
+                    LogMe("No Afterburner Dir selected");
+                    LogMe("Please select the directory where MSI Afterburner is installed");
+                    LogMe("-----------------------------------");
+                }
+                else
+                    LogMe($"Can't load Afterburner config from {settings.abConfigFile}");
+            }
+            else
+                LogMe($"Loaded Afterburner config from {abConfigProvider.ConfigFile}");
+
+            SetSourceFromAbConfig();
+
             RestartMeasurements(GetSource());
+        }
+
+        private void SetSourceFromAbConfig()
+        {
+            if (abConfigProvider?.IsConfigFileValid() ?? false)
+            {
+                SetSource(abConfigProvider.GetHistoryLogPath());
+            }
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -101,12 +143,15 @@ namespace AfterburnerViewerServerWin
             {
                 txtFile.Clear();
 
-                LogMe("-------------------------------------");
-                LogMe("No Afterburner History File selected.");
-                LogMe("Please follow these steps:");
-                LogMe("  1. In MSI Afterburner go to Setting -> Monitoring and enable Logging History to file");
-                LogMe("  2. Select your History Log file in the menu above");
-                LogMe("-------------------------------------");
+                if (abConfigProvider != null)
+                {
+                    LogMe("-----------------------------------------");
+                    LogMe("!!! No Afterburner History File found !!!");
+                    LogMe("Please follow these steps:");
+                    LogMe("  1. In MSI Afterburner go to Setting -> Monitoring and enable Logging History to file");
+                    LogMe("  2. Select your History Log file in the menu above");
+                    LogMe("-----------------------------------------");
+                }
             }
         }
 
@@ -228,5 +273,53 @@ namespace AfterburnerViewerServerWin
 
             return fn;
         }
+
+        private void btOpenDir_Click(object sender, EventArgs e)
+        {
+            SetAbConfig(CreateAbConfig(Path.Combine(
+                GetAbConfigDirFromUser() ?? String.Empty,
+                "Profiles",
+                "MSIAfterburner.cfg")));
+
+            SetSourceFromAbConfig();
+        }
+
+        private IAfterburnerConfig? CreateAbConfig(string? abConfigFile)
+        {
+            if (String.IsNullOrEmpty(abConfigFile))
+                return null;
+
+            try
+            {
+                return new AfterburnerConfig(abConfigFile);
+            }
+            catch (Exception ex)
+            {
+                LogMe(ex.Message);
+                return null;
+            }
+        }
+
+        protected string? GetAbConfigDirFromUser()
+        {
+            dlgDir.AutoUpgradeEnabled = true;
+
+            string dirPath = txtDir.Text;
+            if (!String.IsNullOrWhiteSpace(dirPath))
+            {
+                dlgDir.InitialDirectory = dirPath;
+                dlgDir.SelectedPath = dirPath;
+            }
+            
+            if (dlgDir.ShowDialog() != DialogResult.OK)
+                return null;
+
+            var fn = dlgDir.SelectedPath;
+
+            txtDir.Text = fn;
+
+            return fn;
+        }
+
     }
 }
