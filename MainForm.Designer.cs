@@ -40,7 +40,6 @@
             btOpenDir = new ToolStripButton();
             txtDir = new ToolStripTextBox();
             toolStripSeparator3 = new ToolStripSeparator();
-            toolStripSeparator5 = new ToolStripSeparator();
             txtABStatus = new ToolStripTextBox();
             toolStrip1 = new ToolStrip();
             toolStripLabel1 = new ToolStripLabel();
@@ -146,10 +145,10 @@
             // toolStrip2
             // 
             toolStrip2.Dock = DockStyle.None;
-            toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3, toolStripSeparator5, txtABStatus });
+            toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3, txtABStatus });
             toolStrip2.Location = new Point(3, 0);
             toolStrip2.Name = "toolStrip2";
-            toolStrip2.Size = new Size(595, 25);
+            toolStrip2.Size = new Size(782, 25);
             toolStrip2.TabIndex = 1;
             // 
             // toolStripLabel2
@@ -179,16 +178,12 @@
             toolStripSeparator3.Name = "toolStripSeparator3";
             toolStripSeparator3.Size = new Size(6, 25);
             // 
-            // toolStripSeparator5
-            // 
-            toolStripSeparator5.Name = "toolStripSeparator5";
-            toolStripSeparator5.Size = new Size(6, 25);
-            // 
             // txtABStatus
             // 
+            txtABStatus.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
             txtABStatus.Name = "txtABStatus";
             txtABStatus.ReadOnly = true;
-            txtABStatus.Size = new Size(175, 25);
+            txtABStatus.Size = new Size(375, 25);
             // 
             // toolStrip1
             // 
@@ -350,7 +345,6 @@
         private ToolStripLabel toolStripLabel3;
         private ToolStripButton toolStripButton2;
         private ToolStripTextBox toolStripTextBox1;
-        private ToolStripSeparator toolStripSeparator5;
         private ToolStripButton btHelp;
         private ToolStripButton btRestartIpc;
         private ToolStripSeparator toolStripSeparator1;
