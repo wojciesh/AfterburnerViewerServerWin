@@ -6,7 +6,7 @@ namespace AfterburnerViewerServerWin
     {
         public static List<MeasurementType> ReadMeasurementTypes(TextReader reader)
         {
-            List<MeasurementType> measurementTypes = [];
+            SortedDictionary<int, MeasurementType> measurementTypes = [];
             List<string> typeNames = [];
             string? line;
             while ((line = reader.ReadLine()) != null)
@@ -28,13 +28,15 @@ namespace AfterburnerViewerServerWin
 
                 var types = ParseMeasurementType(line, typeNames);
                 if (types != null)
-                    measurementTypes.Add(types);
+                    measurementTypes.TryAdd(typeNames.FindIndex(
+                        x => x.Equals(types.Name, StringComparison.OrdinalIgnoreCase)), 
+                        types);
             }
 
             if (measurementTypes.Count < typeNames.Count)
                 throw new FormatException($"Expected {typeNames.Count} measurement types definitions but found only {measurementTypes.Count}");
 
-            return measurementTypes;
+            return measurementTypes.Values.ToList();
 
 
             static MeasurementType? ParseMeasurementType(string typeInfoLine, List<string> typeNames)
