@@ -35,22 +35,25 @@
             splitContainer1 = new SplitContainer();
             label1 = new Label();
             txtMeasurementsPreview = new TextBox();
+            toolStrip3 = new ToolStrip();
+            btRestartIpc = new ToolStripButton();
+            btHelp = new ToolStripButton();
             toolStrip2 = new ToolStrip();
             toolStripLabel2 = new ToolStripLabel();
             btOpenDir = new ToolStripButton();
             txtDir = new ToolStripTextBox();
             toolStripSeparator3 = new ToolStripSeparator();
             toolStrip1 = new ToolStrip();
-            btRestartIpc = new ToolStripButton();
-            toolStripSeparator1 = new ToolStripSeparator();
             toolStripLabel1 = new ToolStripLabel();
             openToolStripButton = new ToolStripButton();
             txtFile = new ToolStripTextBox();
             toolStripSeparator2 = new ToolStripSeparator();
-            helpToolStripButton = new ToolStripButton();
             logTimer = new System.Windows.Forms.Timer(components);
             dlgOpen = new OpenFileDialog();
             dlgDir = new FolderBrowserDialog();
+            toolStripSeparator1 = new ToolStripSeparator();
+            btCopyMeasurement = new ToolStripButton();
+            toolStripSeparator4 = new ToolStripSeparator();
             toolStripContainer1.ContentPanel.SuspendLayout();
             toolStripContainer1.TopToolStripPanel.SuspendLayout();
             toolStripContainer1.SuspendLayout();
@@ -58,6 +61,7 @@
             splitContainer1.Panel1.SuspendLayout();
             splitContainer1.Panel2.SuspendLayout();
             splitContainer1.SuspendLayout();
+            toolStrip3.SuspendLayout();
             toolStrip2.SuspendLayout();
             toolStrip1.SuspendLayout();
             SuspendLayout();
@@ -92,8 +96,9 @@
             // 
             // toolStripContainer1.TopToolStripPanel
             // 
-            toolStripContainer1.TopToolStripPanel.Controls.Add(toolStrip1);
             toolStripContainer1.TopToolStripPanel.Controls.Add(toolStrip2);
+            toolStripContainer1.TopToolStripPanel.Controls.Add(toolStrip1);
+            toolStripContainer1.TopToolStripPanel.Controls.Add(toolStrip3);
             // 
             // splitContainer1
             // 
@@ -135,20 +140,48 @@
             txtMeasurementsPreview.Size = new Size(766, 21);
             txtMeasurementsPreview.TabIndex = 2;
             // 
+            // toolStrip3
+            // 
+            toolStrip3.Dock = DockStyle.None;
+            toolStrip3.Items.AddRange(new ToolStripItem[] { btRestartIpc, toolStripSeparator4, btCopyMeasurement, toolStripSeparator1, btHelp });
+            toolStrip3.Location = new Point(3, 50);
+            toolStrip3.Name = "toolStrip3";
+            toolStrip3.Size = new Size(315, 25);
+            toolStrip3.TabIndex = 2;
+            // 
+            // btRestartIpc
+            // 
+            btRestartIpc.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btRestartIpc.Image = (Image)resources.GetObject("btRestartIpc.Image");
+            btRestartIpc.ImageTransparentColor = Color.Magenta;
+            btRestartIpc.Name = "btRestartIpc";
+            btRestartIpc.Size = new Size(81, 22);
+            btRestartIpc.Text = "Restart server";
+            btRestartIpc.Click += btRestartIpc_Click;
+            // 
+            // btHelp
+            // 
+            btHelp.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            btHelp.Image = (Image)resources.GetObject("btHelp.Image");
+            btHelp.ImageTransparentColor = Color.Magenta;
+            btHelp.Name = "btHelp";
+            btHelp.Size = new Size(23, 22);
+            btHelp.Text = "He&lp";
+            // 
             // toolStrip2
             // 
             toolStrip2.Dock = DockStyle.None;
             toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3 });
             toolStrip2.Location = new Point(3, 0);
             toolStrip2.Name = "toolStrip2";
-            toolStrip2.Size = new Size(462, 25);
+            toolStrip2.Size = new Size(461, 25);
             toolStrip2.TabIndex = 1;
             // 
             // toolStripLabel2
             // 
             toolStripLabel2.Name = "toolStripLabel2";
-            toolStripLabel2.Size = new Size(89, 22);
-            toolStripLabel2.Text = "Afterburner Dir:";
+            toolStripLabel2.Size = new Size(88, 22);
+            toolStripLabel2.Text = "Afterburner dir:";
             // 
             // btOpenDir
             // 
@@ -174,26 +207,11 @@
             // toolStrip1
             // 
             toolStrip1.Dock = DockStyle.None;
-            toolStrip1.Items.AddRange(new ToolStripItem[] { btRestartIpc, toolStripSeparator1, toolStripLabel1, openToolStripButton, txtFile, toolStripSeparator2, helpToolStripButton });
-            toolStrip1.Location = new Point(6, 25);
+            toolStrip1.Items.AddRange(new ToolStripItem[] { toolStripLabel1, openToolStripButton, txtFile, toolStripSeparator2 });
+            toolStrip1.Location = new Point(3, 25);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new Size(647, 25);
+            toolStrip1.Size = new Size(506, 25);
             toolStrip1.TabIndex = 0;
-            // 
-            // btRestartIpc
-            // 
-            btRestartIpc.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            btRestartIpc.Image = (Image)resources.GetObject("btRestartIpc.Image");
-            btRestartIpc.ImageTransparentColor = Color.Magenta;
-            btRestartIpc.Name = "btRestartIpc";
-            btRestartIpc.Size = new Size(81, 22);
-            btRestartIpc.Text = "Restart server";
-            btRestartIpc.Click += toolStripButton1_Click;
-            // 
-            // toolStripSeparator1
-            // 
-            toolStripSeparator1.Name = "toolStripSeparator1";
-            toolStripSeparator1.Size = new Size(6, 25);
             // 
             // toolStripLabel1
             // 
@@ -222,15 +240,6 @@
             toolStripSeparator2.Name = "toolStripSeparator2";
             toolStripSeparator2.Size = new Size(6, 25);
             // 
-            // helpToolStripButton
-            // 
-            helpToolStripButton.DisplayStyle = ToolStripItemDisplayStyle.Image;
-            helpToolStripButton.Image = (Image)resources.GetObject("helpToolStripButton.Image");
-            helpToolStripButton.ImageTransparentColor = Color.Magenta;
-            helpToolStripButton.Name = "helpToolStripButton";
-            helpToolStripButton.Size = new Size(23, 22);
-            helpToolStripButton.Text = "He&lp";
-            // 
             // logTimer
             // 
             logTimer.Enabled = true;
@@ -245,6 +254,26 @@
             // dlgDir
             // 
             dlgDir.RootFolder = Environment.SpecialFolder.CommonProgramFilesX86;
+            // 
+            // toolStripSeparator1
+            // 
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new Size(6, 25);
+            // 
+            // btCopyMeasurement
+            // 
+            btCopyMeasurement.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btCopyMeasurement.Image = (Image)resources.GetObject("btCopyMeasurement.Image");
+            btCopyMeasurement.ImageTransparentColor = Color.Magenta;
+            btCopyMeasurement.Name = "btCopyMeasurement";
+            btCopyMeasurement.Size = new Size(156, 22);
+            btCopyMeasurement.Text = "Copy current measurement";
+            btCopyMeasurement.Click += btCopyMeasurement_Click;
+            // 
+            // toolStripSeparator4
+            // 
+            toolStripSeparator4.Name = "toolStripSeparator4";
+            toolStripSeparator4.Size = new Size(6, 25);
             // 
             // MainForm
             // 
@@ -267,6 +296,8 @@
             splitContainer1.Panel2.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)splitContainer1).EndInit();
             splitContainer1.ResumeLayout(false);
+            toolStrip3.ResumeLayout(false);
+            toolStrip3.PerformLayout();
             toolStrip2.ResumeLayout(false);
             toolStrip2.PerformLayout();
             toolStrip1.ResumeLayout(false);
@@ -278,9 +309,7 @@
         private TextBox log;
         private ToolStripContainer toolStripContainer1;
         private ToolStrip toolStrip1;
-        private ToolStripButton btRestartIpc;
         private System.Windows.Forms.Timer logTimer;
-        private ToolStripSeparator toolStripSeparator1;
         private ToolStripTextBox txtFile;
         private ToolStripLabel toolStripLabel1;
         private OpenFileDialog dlgOpen;
@@ -296,5 +325,15 @@
         private ToolStripTextBox txtDir;
         private FolderBrowserDialog dlgDir;
         private ToolStripSeparator toolStripSeparator3;
+        private ToolStrip toolStrip3;
+        private ToolStripSeparator toolStripSeparator4;
+        private ToolStripLabel toolStripLabel3;
+        private ToolStripButton toolStripButton2;
+        private ToolStripTextBox toolStripTextBox1;
+        private ToolStripSeparator toolStripSeparator5;
+        private ToolStripButton btHelp;
+        private ToolStripButton btRestartIpc;
+        private ToolStripSeparator toolStripSeparator1;
+        private ToolStripButton btCopyMeasurement;
     }
 }

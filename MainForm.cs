@@ -32,7 +32,7 @@ namespace AfterburnerViewerServerWin
                 .Build();
 
             SetAbConfig(CreateAbConfig(settings.abConfigFile));
-            
+
             ipcServer = new IpcServer(PIPE_NAME);
             measurementsProvider = CreateMeasurementsProvider();
         }
@@ -86,12 +86,6 @@ namespace AfterburnerViewerServerWin
         {
             DestroyIpc();
             DestroyMeasurements();
-        }
-
-
-        private void toolStripButton1_Click(object sender, EventArgs e)
-        {
-            RestartIpc();
         }
 
         protected AfterburnerMeasurementsProvider CreateMeasurementsProvider()
@@ -310,7 +304,7 @@ namespace AfterburnerViewerServerWin
                 dlgDir.InitialDirectory = dirPath;
                 dlgDir.SelectedPath = dirPath;
             }
-            
+
             if (dlgDir.ShowDialog() != DialogResult.OK)
                 return null;
 
@@ -321,5 +315,16 @@ namespace AfterburnerViewerServerWin
             return fn;
         }
 
+        private void btRestartIpc_Click(object sender, EventArgs e)
+        {
+            RestartIpc();
+        }
+
+        private void btCopyMeasurement_Click(object sender, EventArgs e)
+        {
+            txtMeasurementsPreview.SelectAll();
+            txtMeasurementsPreview.Copy();
+            txtMeasurementsPreview.DeselectAll();
+        }
     }
 }
