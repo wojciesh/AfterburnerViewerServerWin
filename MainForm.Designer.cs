@@ -40,6 +40,10 @@
             btOpenDir = new ToolStripButton();
             txtDir = new ToolStripTextBox();
             toolStripSeparator3 = new ToolStripSeparator();
+            btSetABConfig = new ToolStripButton();
+            toolStripSeparator5 = new ToolStripSeparator();
+            toolStripLabel4 = new ToolStripLabel();
+            toolStripTextBox2 = new ToolStripTextBox();
             toolStrip1 = new ToolStrip();
             toolStripLabel1 = new ToolStripLabel();
             openToolStripButton = new ToolStripButton();
@@ -54,10 +58,6 @@
             logTimer = new System.Windows.Forms.Timer(components);
             dlgOpen = new OpenFileDialog();
             dlgDir = new FolderBrowserDialog();
-            toolStripLabel4 = new ToolStripLabel();
-            toolStripTextBox2 = new ToolStripTextBox();
-            btSetABConfig = new ToolStripButton();
-            toolStripSeparator5 = new ToolStripSeparator();
             toolStripContainer1.ContentPanel.SuspendLayout();
             toolStripContainer1.TopToolStripPanel.SuspendLayout();
             toolStripContainer1.SuspendLayout();
@@ -150,7 +150,7 @@
             toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3, btSetABConfig, toolStripSeparator5, toolStripLabel4, toolStripTextBox2 });
             toolStrip2.Location = new Point(3, 0);
             toolStrip2.Name = "toolStrip2";
-            toolStrip2.Size = new Size(814, 25);
+            toolStrip2.Size = new Size(845, 25);
             toolStrip2.TabIndex = 1;
             // 
             // toolStripLabel2
@@ -179,6 +179,33 @@
             // 
             toolStripSeparator3.Name = "toolStripSeparator3";
             toolStripSeparator3.Size = new Size(6, 25);
+            // 
+            // btSetABConfig
+            // 
+            btSetABConfig.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            btSetABConfig.Image = (Image)resources.GetObject("btSetABConfig.Image");
+            btSetABConfig.ImageTransparentColor = Color.Magenta;
+            btSetABConfig.Name = "btSetABConfig";
+            btSetABConfig.Size = new Size(128, 22);
+            btSetABConfig.Text = "Enable AB History Log";
+            btSetABConfig.Click += btSetABConfig_Click;
+            // 
+            // toolStripSeparator5
+            // 
+            toolStripSeparator5.Name = "toolStripSeparator5";
+            toolStripSeparator5.Size = new Size(6, 25);
+            // 
+            // toolStripLabel4
+            // 
+            toolStripLabel4.Name = "toolStripLabel4";
+            toolStripLabel4.Size = new Size(42, 22);
+            toolStripLabel4.Text = "Status:";
+            // 
+            // toolStripTextBox2
+            // 
+            toolStripTextBox2.Name = "toolStripTextBox2";
+            toolStripTextBox2.ReadOnly = true;
+            toolStripTextBox2.Size = new Size(175, 25);
             // 
             // toolStrip1
             // 
@@ -278,32 +305,6 @@
             // dlgDir
             // 
             dlgDir.RootFolder = Environment.SpecialFolder.CommonProgramFilesX86;
-            // 
-            // toolStripLabel4
-            // 
-            toolStripLabel4.Name = "toolStripLabel4";
-            toolStripLabel4.Size = new Size(42, 22);
-            toolStripLabel4.Text = "Status:";
-            // 
-            // toolStripTextBox2
-            // 
-            toolStripTextBox2.Name = "toolStripTextBox2";
-            toolStripTextBox2.ReadOnly = true;
-            toolStripTextBox2.Size = new Size(175, 23);
-            // 
-            // btSetABConfig
-            // 
-            btSetABConfig.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            btSetABConfig.Image = (Image)resources.GetObject("btSetABConfig.Image");
-            btSetABConfig.ImageTransparentColor = Color.Magenta;
-            btSetABConfig.Name = "btSetABConfig";
-            btSetABConfig.Size = new Size(128, 22);
-            btSetABConfig.Text = "Enable AB History Log";
-            // 
-            // toolStripSeparator5
-            // 
-            toolStripSeparator5.Name = "toolStripSeparator5";
-            toolStripSeparator5.Size = new Size(6, 25);
             // 
             // MainForm
             // 
