@@ -326,5 +326,52 @@ namespace AfterburnerViewerServerWin
             txtMeasurementsPreview.Copy();
             txtMeasurementsPreview.DeselectAll();
         }
+
+        private void btSetABConfig_Click(object sender, EventArgs e)
+        {
+            DialogResult wantBackup = MessageBox.Show("This will modify your MSI Afterburner config file?\r\nDo you want to make a backup?", "Warning", MessageBoxButtons.YesNoCancel);
+            if (wantBackup == DialogResult.Cancel)
+                return;
+
+            if (!(abConfigProvider?.IsConfigFileValid() ?? false))
+            {
+                LogMe("ERROR: No valid Afterburner config file found");
+                return;
+            }
+
+            if (wantBackup == DialogResult.Yes
+                && !backupABConfigFile())
+            {
+                LogMe("STOP: Not modifying Afterburner config file without backup");
+                return;
+            }
+
+            SetHistoryLogOn();
+
+        }
+
+        private void SetHistoryLogOn()
+        {
+            throw new NotImplementedException();
+        }
+
+        private bool backupABConfigFile()
+        {
+            try
+            {
+                string backupFile = Path.Combine(
+                                    Path.GetDirectoryName(abConfigProvider.ConfigFile) ?? String.Empty,
+                                    $"MSIAfterburner.cfg.{DateTime.Now:yyyyMMddHHmmss}.bak");
+                File.Copy(abConfigProvider?.ConfigFile ?? String.Empty, backupFile, true);
+
+                LogMe($"Backup of Afterburner config file created: {backupFile}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogMe($"ERROR: Can't backup Afterburner config file: {ex.Message}");
+                return false;
+            }
+        }
     }
 }
