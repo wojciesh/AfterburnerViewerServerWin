@@ -42,8 +42,7 @@
             toolStripSeparator3 = new ToolStripSeparator();
             btSetABConfig = new ToolStripButton();
             toolStripSeparator5 = new ToolStripSeparator();
-            toolStripLabel4 = new ToolStripLabel();
-            toolStripTextBox2 = new ToolStripTextBox();
+            txtABStatus = new ToolStripTextBox();
             toolStrip1 = new ToolStrip();
             toolStripLabel1 = new ToolStripLabel();
             openToolStripButton = new ToolStripButton();
@@ -58,6 +57,7 @@
             logTimer = new System.Windows.Forms.Timer(components);
             dlgOpen = new OpenFileDialog();
             dlgDir = new FolderBrowserDialog();
+            timerABSettings = new System.Windows.Forms.Timer(components);
             toolStripContainer1.ContentPanel.SuspendLayout();
             toolStripContainer1.TopToolStripPanel.SuspendLayout();
             toolStripContainer1.SuspendLayout();
@@ -79,7 +79,7 @@
             log.Name = "log";
             log.ReadOnly = true;
             log.ScrollBars = ScrollBars.Both;
-            log.Size = new Size(876, 226);
+            log.Size = new Size(785, 226);
             log.TabIndex = 1;
             log.WordWrap = false;
             // 
@@ -90,11 +90,11 @@
             // 
             toolStripContainer1.ContentPanel.AutoScroll = true;
             toolStripContainer1.ContentPanel.Controls.Add(splitContainer1);
-            toolStripContainer1.ContentPanel.Size = new Size(876, 275);
+            toolStripContainer1.ContentPanel.Size = new Size(785, 275);
             toolStripContainer1.Dock = DockStyle.Fill;
             toolStripContainer1.Location = new Point(0, 0);
             toolStripContainer1.Name = "toolStripContainer1";
-            toolStripContainer1.Size = new Size(876, 350);
+            toolStripContainer1.Size = new Size(785, 350);
             toolStripContainer1.TabIndex = 2;
             toolStripContainer1.Text = "toolStripContainer1";
             // 
@@ -121,7 +121,7 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(log);
-            splitContainer1.Size = new Size(876, 275);
+            splitContainer1.Size = new Size(785, 275);
             splitContainer1.SplitterDistance = 45;
             splitContainer1.TabIndex = 3;
             // 
@@ -141,16 +141,16 @@
             txtMeasurementsPreview.Location = new Point(0, 24);
             txtMeasurementsPreview.Name = "txtMeasurementsPreview";
             txtMeasurementsPreview.ReadOnly = true;
-            txtMeasurementsPreview.Size = new Size(876, 21);
+            txtMeasurementsPreview.Size = new Size(785, 21);
             txtMeasurementsPreview.TabIndex = 2;
             // 
             // toolStrip2
             // 
             toolStrip2.Dock = DockStyle.None;
-            toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3, btSetABConfig, toolStripSeparator5, toolStripLabel4, toolStripTextBox2 });
+            toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3, btSetABConfig, toolStripSeparator5, txtABStatus });
             toolStrip2.Location = new Point(3, 0);
             toolStrip2.Name = "toolStrip2";
-            toolStrip2.Size = new Size(845, 25);
+            toolStrip2.Size = new Size(723, 25);
             toolStrip2.TabIndex = 1;
             // 
             // toolStripLabel2
@@ -173,7 +173,7 @@
             // 
             txtDir.Name = "txtDir";
             txtDir.ReadOnly = true;
-            txtDir.Size = new Size(330, 25);
+            txtDir.Size = new Size(250, 25);
             // 
             // toolStripSeparator3
             // 
@@ -195,17 +195,11 @@
             toolStripSeparator5.Name = "toolStripSeparator5";
             toolStripSeparator5.Size = new Size(6, 25);
             // 
-            // toolStripLabel4
+            // txtABStatus
             // 
-            toolStripLabel4.Name = "toolStripLabel4";
-            toolStripLabel4.Size = new Size(42, 22);
-            toolStripLabel4.Text = "Status:";
-            // 
-            // toolStripTextBox2
-            // 
-            toolStripTextBox2.Name = "toolStripTextBox2";
-            toolStripTextBox2.ReadOnly = true;
-            toolStripTextBox2.Size = new Size(175, 25);
+            txtABStatus.Name = "txtABStatus";
+            txtABStatus.ReadOnly = true;
+            txtABStatus.Size = new Size(175, 25);
             // 
             // toolStrip1
             // 
@@ -306,11 +300,17 @@
             // 
             dlgDir.RootFolder = Environment.SpecialFolder.CommonProgramFilesX86;
             // 
+            // timerABSettings
+            // 
+            timerABSettings.Enabled = true;
+            timerABSettings.Interval = 1000;
+            timerABSettings.Tick += timerABSettings_Tick;
+            // 
             // MainForm
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(876, 350);
+            ClientSize = new Size(785, 350);
             Controls.Add(toolStripContainer1);
             Name = "MainForm";
             Text = "AfterburnerToStreamDeck-Server";
@@ -367,7 +367,7 @@
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripButton btCopyMeasurement;
         private ToolStripButton btSetABConfig;
-        private ToolStripLabel toolStripLabel4;
-        private ToolStripTextBox toolStripTextBox2;
+        private ToolStripTextBox txtABStatus;
+        private System.Windows.Forms.Timer timerABSettings;
     }
 }

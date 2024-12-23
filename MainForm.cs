@@ -373,5 +373,16 @@ namespace AfterburnerViewerServerWin
                 return false;
             }
         }
+
+        private void timerABSettings_Tick(object sender, EventArgs e)
+        {
+            bool? isOn = abConfigProvider?.IsHistoryLogEnabled();
+            txtABStatus.Text = "History Log: " + (
+                isOn == null
+                ? "Unknown"
+                : isOn == true
+                    ? "Enabled"
+                    : "Disabled");
+        }
     }
 }
