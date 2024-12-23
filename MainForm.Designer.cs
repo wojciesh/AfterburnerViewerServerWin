@@ -40,7 +40,6 @@
             btOpenDir = new ToolStripButton();
             txtDir = new ToolStripTextBox();
             toolStripSeparator3 = new ToolStripSeparator();
-            btSetABConfig = new ToolStripButton();
             toolStripSeparator5 = new ToolStripSeparator();
             txtABStatus = new ToolStripTextBox();
             toolStrip1 = new ToolStrip();
@@ -147,10 +146,10 @@
             // toolStrip2
             // 
             toolStrip2.Dock = DockStyle.None;
-            toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3, btSetABConfig, toolStripSeparator5, txtABStatus });
+            toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3, toolStripSeparator5, txtABStatus });
             toolStrip2.Location = new Point(3, 0);
             toolStrip2.Name = "toolStrip2";
-            toolStrip2.Size = new Size(723, 25);
+            toolStrip2.Size = new Size(595, 25);
             toolStrip2.TabIndex = 1;
             // 
             // toolStripLabel2
@@ -179,16 +178,6 @@
             // 
             toolStripSeparator3.Name = "toolStripSeparator3";
             toolStripSeparator3.Size = new Size(6, 25);
-            // 
-            // btSetABConfig
-            // 
-            btSetABConfig.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            btSetABConfig.Image = (Image)resources.GetObject("btSetABConfig.Image");
-            btSetABConfig.ImageTransparentColor = Color.Magenta;
-            btSetABConfig.Name = "btSetABConfig";
-            btSetABConfig.Size = new Size(128, 22);
-            btSetABConfig.Text = "Enable AB History Log";
-            btSetABConfig.Click += btSetABConfig_Click;
             // 
             // toolStripSeparator5
             // 
@@ -366,7 +355,6 @@
         private ToolStripButton btRestartIpc;
         private ToolStripSeparator toolStripSeparator1;
         private ToolStripButton btCopyMeasurement;
-        private ToolStripButton btSetABConfig;
         private ToolStripTextBox txtABStatus;
         private System.Windows.Forms.Timer timerABSettings;
     }
