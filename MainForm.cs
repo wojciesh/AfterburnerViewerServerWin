@@ -37,17 +37,6 @@ namespace AfterburnerViewerServerWin
             measurementsProvider = CreateMeasurementsProvider();
         }
 
-        private void SetAbConfig(IAfterburnerConfig? afterburnerConfig)
-        {
-            abConfigProvider = afterburnerConfig;
-
-            settings.abConfigFile = abConfigProvider == null
-                ? string.Empty
-                : abConfigProvider.ConfigFile;
-
-            txtDir.Text = Path.GetDirectoryName(settings.abConfigFile);
-        }
-
         private void Form1_Load(object sender, EventArgs e)
         {
             Text = APPLICATION_TITLE;
@@ -91,7 +80,94 @@ namespace AfterburnerViewerServerWin
             }
         }
 
-        private void SetSourceFromAbConfig()
+        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            DestroyIpc();
+            DestroyMeasurements();
+        }
+
+
+        private IAfterburnerConfig? CreateAbConfig(string? abConfigFile)
+        {
+            if (string.IsNullOrEmpty(abConfigFile))
+                return null;
+
+            try
+            {
+                return new AfterburnerConfig(abConfigFile);
+            }
+            catch (Exception ex)
+            {
+                LogMe(ex.Message);
+                return null;
+            }
+        }
+
+        protected void SetAbConfig(IAfterburnerConfig? afterburnerConfig)
+        {
+            abConfigProvider = afterburnerConfig;
+
+            settings.abConfigFile = abConfigProvider == null
+                ? string.Empty
+                : abConfigProvider.ConfigFile;
+
+            txtDir.Text = Path.GetDirectoryName(settings.abConfigFile);
+        }
+
+        protected string? GetAbConfigDirFromUser()
+        {
+            dlgDir.AutoUpgradeEnabled = true;
+
+            if (dlgDir.ShowDialog() != DialogResult.OK)
+                return null;
+
+            var fn = dlgDir.SelectedPath;
+
+            txtDir.Text = fn;
+
+            return fn;
+        }
+
+        
+        protected string GetSource()
+        {
+            return settings.sourceFile;
+        }
+
+        protected bool SetSource(string? sourceFile)
+        {
+            if (!measurementsProvider.IsValidSource(sourceFile))
+                return false;
+            Debug.Assert(sourceFile != null);
+            settings.sourceFile = sourceFile;
+            return true;
+        }
+
+        protected string? GetSourceFileFromUser()
+        {
+            string filePath = txtFile.Text;
+
+            if (!string.IsNullOrWhiteSpace(filePath))
+            {
+                dlgOpen.InitialDirectory = Path.GetDirectoryName(filePath);
+                dlgOpen.FileName = Path.GetFileName(filePath);
+            }
+            else
+            {
+                dlgOpen.FileName = "HardwareMonitoring.hml";
+            }
+
+            if (dlgOpen.ShowDialog() != DialogResult.OK)
+                return null;
+
+            var fn = dlgOpen.FileName;
+
+            txtFile.Text = fn;
+
+            return fn;
+        }
+
+        protected void SetSourceFromAbConfig()
         {
             if (abConfigProvider?.IsConfigFileValid() ?? false)
             {
@@ -114,13 +190,8 @@ namespace AfterburnerViewerServerWin
             }
         }
 
-        private void Form1_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            DestroyIpc();
-            DestroyMeasurements();
-        }
 
-        protected AfterburnerMeasurementsProvider CreateMeasurementsProvider()
+        protected IMeasurementsProvider CreateMeasurementsProvider()
         {
             var mp = new AfterburnerMeasurementsProvider();
 
@@ -130,32 +201,6 @@ namespace AfterburnerViewerServerWin
 
             return mp;
 
-        }
-
-        protected void HandleNewMeasurements(object? sender, List<AfterburnerMeasurement> measurements)
-        {
-            if (measurements == null || measurements.Count == 0)
-                return;
-
-            string measurementsJson = JsonSerializer.Serialize(measurements);
-
-            ipcServer.Write(measurementsJson);
-
-            UpdateMeasurementPreview(measurements
-                .Select(m => $"{m.Type.Name}: {getFormattedValue(m)}{m.Type.Unit}")
-                .Aggregate((a, b) => $"{a} | {b}")
-            );
-
-
-            string getFormattedValue(AfterburnerMeasurement m)
-            {
-                return m.Type.Format switch
-                {
-                    "%.3f" => m.Value.ToString("F3"),
-                    "%.2f" => m.Value.ToString("F2"),
-                    _ => m.Value.ToString("F1"),
-                };
-            }
         }
 
         protected void RestartMeasurements(string? sourceFile)
@@ -192,13 +237,47 @@ namespace AfterburnerViewerServerWin
             measurementsProvider.Dispose();
         }
 
+        protected void HandleNewMeasurements(object? sender, List<AfterburnerMeasurement> measurements)
+        {
+            if (measurements == null || measurements.Count == 0)
+                return;
+
+            string measurementsJson = JsonSerializer.Serialize(measurements);
+
+            ipcServer.Write(measurementsJson);
+
+            UpdateMeasurementPreview(measurements
+                .Select(m => $"{m.Type.Name}: {getFormattedValue(m)}{m.Type.Unit}")
+                .Aggregate((a, b) => $"{a} | {b}")
+            );
+
+
+            string getFormattedValue(AfterburnerMeasurement m)
+            {
+                return m.Type.Format switch
+                {
+                    "%.3f" => m.Value.ToString("F3"),
+                    "%.2f" => m.Value.ToString("F2"),
+                    _ => m.Value.ToString("F1"),
+                };
+            }
+        }
+
         protected void UpdateMeasurementPreview(string measurement)
         {
-            this.BeginInvoke(() =>
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(() =>
+                {
+                    try { txtMeasurementsPreview.Text = measurement; }
+                    catch { }
+                });
+            }
+            else
             {
                 try { txtMeasurementsPreview.Text = measurement; }
                 catch { }
-            });
+            }
         }
 
 
@@ -256,50 +335,6 @@ namespace AfterburnerViewerServerWin
         }
 
 
-        private void btSelectSourceFile_Click(object sender, EventArgs e)
-        {
-            RestartMeasurements(GetSourceFileFromUser());
-        }
-
-
-        protected string GetSource()
-        {
-            return settings.sourceFile;
-        }
-
-        protected bool SetSource(string? sourceFile)
-        {
-            if (!measurementsProvider.IsValidSource(sourceFile))
-                return false;
-            Debug.Assert(sourceFile != null);
-            settings.sourceFile = sourceFile;
-            return true;
-        }
-
-        protected string? GetSourceFileFromUser()
-        {
-            string filePath = txtFile.Text;
-
-            if (!string.IsNullOrWhiteSpace(filePath))
-            {
-                dlgOpen.InitialDirectory = Path.GetDirectoryName(filePath);
-                dlgOpen.FileName = Path.GetFileName(filePath);
-            }
-            else
-            {
-                dlgOpen.FileName = "HardwareMonitoring.hml";
-            }
-
-            if (dlgOpen.ShowDialog() != DialogResult.OK)
-                return null;
-
-            var fn = dlgOpen.FileName;
-
-            txtFile.Text = fn;
-
-            return fn;
-        }
-
         private void btOpenDir_Click(object sender, EventArgs e)
         {
             string? dir = GetAbConfigDirFromUser();
@@ -314,36 +349,12 @@ namespace AfterburnerViewerServerWin
 
             SetSourceFromAbConfig();
             UpdateSourceGUI();
+            RestartMeasurements(GetSource());
         }
 
-        private IAfterburnerConfig? CreateAbConfig(string? abConfigFile)
+        private void btSelectSourceFile_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrEmpty(abConfigFile))
-                return null;
-
-            try
-            {
-                return new AfterburnerConfig(abConfigFile);
-            }
-            catch (Exception ex)
-            {
-                LogMe(ex.Message);
-                return null;
-            }
-        }
-
-        protected string? GetAbConfigDirFromUser()
-        {
-            dlgDir.AutoUpgradeEnabled = true;
-
-            if (dlgDir.ShowDialog() != DialogResult.OK)
-                return null;
-
-            var fn = dlgDir.SelectedPath;
-
-            txtDir.Text = fn;
-
-            return fn;
+            RestartMeasurements(GetSourceFileFromUser());
         }
 
         private void btRestartIpc_Click(object sender, EventArgs e)
