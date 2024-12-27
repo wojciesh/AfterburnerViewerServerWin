@@ -302,8 +302,13 @@ namespace AfterburnerViewerServerWin
 
         private void btOpenDir_Click(object sender, EventArgs e)
         {
+            string? dir = GetAbConfigDirFromUser();
+            
+            if (string.IsNullOrEmpty(dir)) 
+                return;
+
             SetAbConfig(CreateAbConfig(Path.Combine(
-                GetAbConfigDirFromUser() ?? string.Empty,
+                dir,
                 "Profiles",
                 "MSIAfterburner.cfg")));
 
@@ -330,13 +335,6 @@ namespace AfterburnerViewerServerWin
         protected string? GetAbConfigDirFromUser()
         {
             dlgDir.AutoUpgradeEnabled = true;
-
-            string dirPath = txtDir.Text;
-            if (!string.IsNullOrWhiteSpace(dirPath))
-            {
-                dlgDir.InitialDirectory = dirPath;
-                dlgDir.SelectedPath = dirPath;
-            }
 
             if (dlgDir.ShowDialog() != DialogResult.OK)
                 return null;
