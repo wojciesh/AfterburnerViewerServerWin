@@ -111,7 +111,10 @@ namespace AfterburnerViewerServerWin
                 ? string.Empty
                 : abConfigProvider.ConfigFile;
 
-            txtDir.Text = Path.GetDirectoryName(settings.abConfigFile);
+            string? dir = Path.GetDirectoryName(settings.abConfigFile);
+            txtDir.Text = dir?.EndsWith("Profiles") ?? false
+                ? Path.GetFullPath(Path.Combine(dir, ".."))
+                : dir;
         }
 
         protected string? GetAbConfigDirFromUser()
