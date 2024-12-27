@@ -151,7 +151,9 @@ namespace AfterburnerViewerServerWin
             }
             catch (Exception ex)
             {
+#if DEBUG
                 OnError?.Invoke(this, ex.Message);
+#endif
                 Thread.Sleep(SourceReadExceptionDelayMs);
             }
             finally
