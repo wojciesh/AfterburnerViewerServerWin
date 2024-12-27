@@ -42,7 +42,7 @@ namespace AfterburnerViewerServerWin
             abConfigProvider = afterburnerConfig;
 
             settings.abConfigFile = abConfigProvider == null
-                ? String.Empty
+                ? string.Empty
                 : abConfigProvider.ConfigFile;
 
             txtDir.Text = Path.GetDirectoryName(settings.abConfigFile);
@@ -56,7 +56,7 @@ namespace AfterburnerViewerServerWin
 
             if (abConfigProvider == null)
             {
-                if (String.IsNullOrEmpty(settings.abConfigFile))
+                if (string.IsNullOrEmpty(settings.abConfigFile))
                 {
                     LogMe("-----------------------------------");
                     LogMe("No Afterburner Dir selected");
@@ -194,7 +194,7 @@ namespace AfterburnerViewerServerWin
 
         protected void LogMe(string msg)
         {
-            if (String.IsNullOrEmpty(msg)) return;
+            if (string.IsNullOrEmpty(msg)) return;
 
             msg = $"{DateTime.Now:HH:mm:ss} {msg}";
 
@@ -215,7 +215,7 @@ namespace AfterburnerViewerServerWin
                 logBuffer.Clear();
             }
 
-            if (String.IsNullOrEmpty(newLogs)) return;
+            if (string.IsNullOrEmpty(newLogs)) return;
 
             log.Text += newLogs;
 
@@ -248,7 +248,7 @@ namespace AfterburnerViewerServerWin
         {
             string filePath = txtFile.Text;
 
-            if (!String.IsNullOrWhiteSpace(filePath))
+            if (!string.IsNullOrWhiteSpace(filePath))
             {
                 dlgOpen.InitialDirectory = Path.GetDirectoryName(filePath);
                 dlgOpen.FileName = Path.GetFileName(filePath);
@@ -271,7 +271,7 @@ namespace AfterburnerViewerServerWin
         private void btOpenDir_Click(object sender, EventArgs e)
         {
             SetAbConfig(CreateAbConfig(Path.Combine(
-                GetAbConfigDirFromUser() ?? String.Empty,
+                GetAbConfigDirFromUser() ?? string.Empty,
                 "Profiles",
                 "MSIAfterburner.cfg")));
 
@@ -280,7 +280,7 @@ namespace AfterburnerViewerServerWin
 
         private IAfterburnerConfig? CreateAbConfig(string? abConfigFile)
         {
-            if (String.IsNullOrEmpty(abConfigFile))
+            if (string.IsNullOrEmpty(abConfigFile))
                 return null;
 
             try
@@ -299,7 +299,7 @@ namespace AfterburnerViewerServerWin
             dlgDir.AutoUpgradeEnabled = true;
 
             string dirPath = txtDir.Text;
-            if (!String.IsNullOrWhiteSpace(dirPath))
+            if (!string.IsNullOrWhiteSpace(dirPath))
             {
                 dlgDir.InitialDirectory = dirPath;
                 dlgDir.SelectedPath = dirPath;

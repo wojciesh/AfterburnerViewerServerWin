@@ -9,9 +9,9 @@ namespace AfterburnerViewerServerWin
     public class AfterburnerMeasurementsProvider : IMeasurementsProvider, IDisposable
     {
         public event EventHandler<List<AfterburnerMeasurement>>? OnNewMeasurements;
-        public event EventHandler<String>? OnError;
+        public event EventHandler<string>? OnError;
 
-        public string Source { get; private set; } = String.Empty;
+        public string Source { get; private set; } = string.Empty;
         
         public List<MeasurementType>? MeasurementTypes { get; private set; }
 
@@ -129,7 +129,7 @@ namespace AfterburnerViewerServerWin
                 fs.Seek(-defaultBuffSize, SeekOrigin.End);
                 string? lastLine = await getLastLineAsync();
 
-                if (String.IsNullOrEmpty(lastLine))
+                if (string.IsNullOrEmpty(lastLine))
                     return;
 
                 OnNewMeasurements?.Invoke(this,
@@ -142,7 +142,7 @@ namespace AfterburnerViewerServerWin
                     while (!sr.EndOfStream)
                         line = await sr.ReadLineAsync();
 
-                    line = String.IsNullOrWhiteSpace(line)
+                    line = string.IsNullOrWhiteSpace(line)
                         ? null
                         : line;
 
@@ -166,7 +166,7 @@ namespace AfterburnerViewerServerWin
 
         public bool IsValidSource(string? source)
         {
-            return !String.IsNullOrWhiteSpace(source) && File.Exists(source);
+            return !string.IsNullOrWhiteSpace(source) && File.Exists(source);
         }
 
 

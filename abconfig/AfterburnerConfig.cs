@@ -23,7 +23,7 @@ namespace AfterburnerViewerServerWin.abconfig
          */
         public AfterburnerConfig(string? configFile)
         {
-            ConfigFile = String.IsNullOrEmpty(configFile) 
+            ConfigFile = string.IsNullOrEmpty(configFile) 
                 ? DEFAULT_CONFIG_FILE 
                 : configFile;
 
