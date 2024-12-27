@@ -77,7 +77,7 @@
             log.Name = "log";
             log.ReadOnly = true;
             log.ScrollBars = ScrollBars.Both;
-            log.Size = new Size(785, 226);
+            log.Size = new Size(785, 334);
             log.TabIndex = 1;
             log.WordWrap = false;
             // 
@@ -88,11 +88,11 @@
             // 
             toolStripContainer1.ContentPanel.AutoScroll = true;
             toolStripContainer1.ContentPanel.Controls.Add(splitContainer1);
-            toolStripContainer1.ContentPanel.Size = new Size(785, 275);
+            toolStripContainer1.ContentPanel.Size = new Size(785, 383);
             toolStripContainer1.Dock = DockStyle.Fill;
             toolStripContainer1.Location = new Point(0, 0);
             toolStripContainer1.Name = "toolStripContainer1";
-            toolStripContainer1.Size = new Size(785, 350);
+            toolStripContainer1.Size = new Size(785, 458);
             toolStripContainer1.TabIndex = 2;
             toolStripContainer1.Text = "toolStripContainer1";
             // 
@@ -119,7 +119,7 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(log);
-            splitContainer1.Size = new Size(785, 275);
+            splitContainer1.Size = new Size(785, 383);
             splitContainer1.SplitterDistance = 45;
             splitContainer1.TabIndex = 3;
             // 
@@ -294,7 +294,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(785, 350);
+            ClientSize = new Size(785, 458);
             Controls.Add(toolStripContainer1);
             Name = "MainForm";
             Text = "AfterburnerToStreamDeck-Server";

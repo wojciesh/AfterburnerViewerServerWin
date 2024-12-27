@@ -59,7 +59,7 @@ namespace AfterburnerViewerServerWin
                 if (string.IsNullOrEmpty(settings.abConfigFile))
                 {
                     LogMe("-----------------------------------");
-                    LogMe("No Afterburner Dir selected");
+                    LogMe("No Afterburner dir selected");
                     LogMe("Please select the directory where MSI Afterburner is installed");
                     LogMe("-----------------------------------");
                 }
