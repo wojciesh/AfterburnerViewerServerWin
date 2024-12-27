@@ -375,6 +375,10 @@ namespace AfterburnerViewerServerWin
                 + $" | Recreate: {toOnOffUn(abConfigProvider?.IsRecreateHistoryLog())}"
                 + $" | Limit: {abConfigProvider?.GetHistoryLogLimit() ?? -1}";
 
+            txtABStatus.BackColor = !(abConfigProvider?.IsHistoryLogEnabled() ?? false)
+                ? Color.DarkRed
+                : Color.DarkGreen;
+
             static string toOnOffUn(bool? isOn)
             {
                 return isOn == null

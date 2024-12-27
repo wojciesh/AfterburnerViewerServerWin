@@ -181,6 +181,7 @@
             // txtABStatus
             // 
             txtABStatus.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point, 0);
+            txtABStatus.ForeColor = Color.White;
             txtABStatus.Name = "txtABStatus";
             txtABStatus.ReadOnly = true;
             txtABStatus.Size = new Size(375, 25);
