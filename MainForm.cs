@@ -51,27 +51,44 @@ namespace AfterburnerViewerServerWin
         private void Form1_Load(object sender, EventArgs e)
         {
             Text = APPLICATION_TITLE;
+            
+            printAbConfigLoadResult();
+
+            if (abConfigProvider != null)
+                loadSourceFile();
+
             InitIpc();
             RestartIpc();
-
-            if (abConfigProvider == null)
-            {
-                if (string.IsNullOrEmpty(settings.abConfigFile))
-                {
-                    LogMe("-----------------------------------");
-                    LogMe("No Afterburner dir selected");
-                    LogMe("Please select the directory where MSI Afterburner is installed");
-                    LogMe("-----------------------------------");
-                }
-                else
-                    LogMe($"Can't load Afterburner config from {settings.abConfigFile}");
-            }
-            else
-                LogMe($"Loaded Afterburner config from {abConfigProvider.ConfigFile}");
-
-            SetSourceFromAbConfig();
-
             RestartMeasurements(GetSource());
+
+
+            void loadSourceFile()
+            {
+                if (string.IsNullOrEmpty(settings.sourceFile))
+                    SetSourceFromAbConfig();
+                else
+                    SetSource(settings.sourceFile);
+
+                UpdateSourceGUI();
+            }
+
+            void printAbConfigLoadResult()
+            {
+                if (abConfigProvider != null)
+                    LogMe($"Loaded Afterburner config from {abConfigProvider.ConfigFile}");
+                else
+                {
+                    if (string.IsNullOrEmpty(settings.abConfigFile))
+                    {
+                        LogMe("-----------------------------------");
+                        LogMe("No Afterburner dir selected");
+                        LogMe("Please select the directory where MSI Afterburner is installed");
+                        LogMe("-----------------------------------");
+                    }
+                    else
+                        LogMe($"WARNING: Can't load Afterburner config from {settings.abConfigFile}");
+                }
+            }
         }
 
         private void SetSourceFromAbConfig()
@@ -79,6 +96,21 @@ namespace AfterburnerViewerServerWin
             if (abConfigProvider?.IsConfigFileValid() ?? false)
             {
                 SetSource(abConfigProvider.GetHistoryLogPath());
+            }
+        }
+
+        private void UpdateSourceGUI()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(() =>
+                {
+                    txtFile.Text = GetSource();
+                });
+            }
+            else
+            {
+                txtFile.Text = GetSource();
             }
         }
 
@@ -232,7 +264,7 @@ namespace AfterburnerViewerServerWin
 
         protected string GetSource()
         {
-            return settings.source;
+            return settings.sourceFile;
         }
 
         protected bool SetSource(string? sourceFile)
@@ -240,7 +272,7 @@ namespace AfterburnerViewerServerWin
             if (!measurementsProvider.IsValidSource(sourceFile))
                 return false;
             Debug.Assert(sourceFile != null);
-            settings.source = sourceFile;
+            settings.sourceFile = sourceFile;
             return true;
         }
 
@@ -276,6 +308,7 @@ namespace AfterburnerViewerServerWin
                 "MSIAfterburner.cfg")));
 
             SetSourceFromAbConfig();
+            UpdateSourceGUI();
         }
 
         private IAfterburnerConfig? CreateAbConfig(string? abConfigFile)
@@ -335,12 +368,11 @@ namespace AfterburnerViewerServerWin
 
             static string toOnOffUn(bool? isOn)
             {
-                return
-                                isOn == null
-                                ? "N/A"
-                                : isOn == true
-                                    ? "ON"
-                                    : "OFF";
+                return isOn == null
+                        ? "N/A"
+                        : isOn == true
+                            ? "ON"
+                            : "OFF";
             }
         }
     }
