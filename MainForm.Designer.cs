@@ -148,7 +148,7 @@
             toolStrip2.Items.AddRange(new ToolStripItem[] { toolStripLabel2, btOpenDir, txtDir, toolStripSeparator3, txtABStatus });
             toolStrip2.Location = new Point(3, 0);
             toolStrip2.Name = "toolStrip2";
-            toolStrip2.Size = new Size(782, 25);
+            toolStrip2.Size = new Size(758, 25);
             toolStrip2.TabIndex = 1;
             // 
             // toolStripLabel2
@@ -192,7 +192,7 @@
             toolStrip1.Items.AddRange(new ToolStripItem[] { toolStripLabel1, openToolStripButton, txtFile, toolStripSeparator2 });
             toolStrip1.Location = new Point(3, 25);
             toolStrip1.Name = "toolStrip1";
-            toolStrip1.Size = new Size(506, 25);
+            toolStrip1.Size = new Size(537, 25);
             toolStrip1.TabIndex = 0;
             // 
             // toolStripLabel1
@@ -269,6 +269,7 @@
             btHelp.Name = "btHelp";
             btHelp.Size = new Size(23, 22);
             btHelp.Text = "He&lp";
+            btHelp.Click += btHelp_Click;
             // 
             // logTimer
             // 

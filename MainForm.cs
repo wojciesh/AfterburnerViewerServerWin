@@ -40,7 +40,7 @@ namespace AfterburnerViewerServerWin
         private void Form1_Load(object sender, EventArgs e)
         {
             Text = APPLICATION_TITLE;
-            
+
             printAbConfigLoadResult();
 
             if (abConfigProvider != null)
@@ -71,7 +71,7 @@ namespace AfterburnerViewerServerWin
                     {
                         LogMe("-----------------------------------");
                         LogMe("No Afterburner dir selected");
-                        LogMe("Please select the directory where MSI Afterburner is installed");
+                        LogMe("Please select the directory where Afterburner is installed");
                         LogMe("-----------------------------------");
                     }
                     else
@@ -131,7 +131,7 @@ namespace AfterburnerViewerServerWin
             return fn;
         }
 
-        
+
         protected string GetSource()
         {
             return settings.sourceFile;
@@ -146,7 +146,7 @@ namespace AfterburnerViewerServerWin
             return true;
         }
 
-        protected string? GetSourceFileFromUser()
+        protected string GetSourceFileFromUser()
         {
             string filePath = txtFile.Text;
 
@@ -161,7 +161,7 @@ namespace AfterburnerViewerServerWin
             }
 
             if (dlgOpen.ShowDialog() != DialogResult.OK)
-                return null;
+                throw new InvalidOperationException("No file selected");
 
             var fn = dlgOpen.FileName;
 
@@ -222,7 +222,7 @@ namespace AfterburnerViewerServerWin
                     LogMe("-----------------------------------------");
                     LogMe("!!! No Afterburner History File found !!!");
                     LogMe("Please follow these steps:");
-                    LogMe("  1. In MSI Afterburner go to Setting -> Monitoring and enable Logging History to file");
+                    LogMe("  1. In Afterburner go to Setting -> Monitoring and enable Logging History to file");
                     LogMe("  2. Select your History Log file in the menu above");
                     LogMe("-----------------------------------------");
                 }
@@ -341,8 +341,8 @@ namespace AfterburnerViewerServerWin
         private void btOpenDir_Click(object sender, EventArgs e)
         {
             string? dir = GetAbConfigDirFromUser();
-            
-            if (string.IsNullOrEmpty(dir)) 
+
+            if (string.IsNullOrEmpty(dir))
                 return;
 
             SetAbConfig(CreateAbConfig(Path.Combine(
@@ -357,7 +357,31 @@ namespace AfterburnerViewerServerWin
 
         private void btSelectSourceFile_Click(object sender, EventArgs e)
         {
-            RestartMeasurements(GetSourceFileFromUser());
+            if (txtFile.Text == abConfigProvider?.GetHistoryLogPath()
+                && MessageBox.Show(this,
+                    "It seems your current History File is matching one selected in Afterburner settings.\r\n\r\n" +
+                    "Do you still want to select other History File?",
+                    "Good question!",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
+
+            try
+            {
+                RestartMeasurements(
+                    GetSourceFileFromUser());
+            }
+            catch (InvalidOperationException ex)
+            {
+                if (ex.Message == "No file selected")
+                    return;
+
+                LogMe(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                LogMe(ex.Message);
+            }
         }
 
         private void btRestartIpc_Click(object sender, EventArgs e)
@@ -390,6 +414,21 @@ namespace AfterburnerViewerServerWin
                             ? "ON"
                             : "OFF";
             }
+        }
+
+        private void btHelp_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(
+                APPLICATION_TITLE + "\r\n\r\n" +
+                "(C) github.com/wojciesh\r\n\r\n" + 
+                "USAGE:\r\n" + 
+                "1. Enable History Logging in Afterburner Settings.\r\n" +
+                "2. Select the directory where Afterburner is installed.\r\n" +
+                "History Log file will be automatically selected.\r\n\r\n" +
+                "The server will now send the measurements from Afterburner to the Stream Deck plugin.",
+                "Help",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
     }
 }
