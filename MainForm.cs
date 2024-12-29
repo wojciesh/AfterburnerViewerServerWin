@@ -1,6 +1,5 @@
 using AfterburnerViewerServerWin.abconfig;
 using Config.Net;
-using System.Configuration;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Text;
@@ -201,6 +200,7 @@ namespace AfterburnerViewerServerWin
             mp.OnError += (s, msg) => LogMe($"Error: {msg}");
 
             mp.OnNewMeasurements += HandleNewMeasurements;
+            mp.OnNewMeasurementTypes += OnNewMeasurementTypes_Received;
 
             return mp;
 
@@ -240,12 +240,35 @@ namespace AfterburnerViewerServerWin
             measurementsProvider.Dispose();
         }
 
+        public record MessagePacket
+        {
+            public required string messageType { get; set; }
+            public required object payload { get; set; }
+        }
+
+        private void OnNewMeasurementTypes_Received(object? sender, List<MeasurementType> types)
+        {
+            string typesJson = JsonSerializer.Serialize(
+                new MessagePacket
+                {
+                    messageType = "MeasurementTypes",
+                    payload = types
+                });
+
+            ipcServer.Write(typesJson);
+        }
+
         protected void HandleNewMeasurements(object? sender, List<AfterburnerMeasurement> measurements)
         {
             if (measurements == null || measurements.Count == 0)
                 return;
 
-            string measurementsJson = JsonSerializer.Serialize(measurements);
+            string measurementsJson = JsonSerializer.Serialize(
+                new MessagePacket
+                {
+                    messageType = "Measurements",
+                    payload = measurements
+                });
 
             ipcServer.Write(measurementsJson);
 

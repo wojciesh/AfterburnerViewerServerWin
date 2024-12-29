@@ -86,6 +86,8 @@ namespace AfterburnerViewerServerWin
             sourceWatcher.EnableRaisingEvents = true;
         }
 
+        List<MeasurementType> LastMeasurementTypes { get; set; } = new();
+
         private void DestroySourceMonitoring()
         {
             if (sourceWatcher == null)
@@ -127,7 +129,11 @@ namespace AfterburnerViewerServerWin
                 if (MeasurementTypes == null || MeasurementTypes.Count == 0)
                     return;
 
-                OnNewMeasurementTypes?.Invoke(this, MeasurementTypes);
+                if (!LastMeasurementTypes.SequenceEqual(MeasurementTypes))
+                {
+                    LastMeasurementTypes = MeasurementTypes;
+                    OnNewMeasurementTypes?.Invoke(this, MeasurementTypes);
+                }
 
                 fs.Seek(-defaultBuffSize, SeekOrigin.End);
                 string? lastLine = await getLastLineAsync();
@@ -183,6 +189,7 @@ namespace AfterburnerViewerServerWin
                 {
                     Stop();
                     OnNewMeasurements = null;
+                    OnNewMeasurementTypes = null;
                     OnError = null;
                     _semaphore.Dispose();
                 }
