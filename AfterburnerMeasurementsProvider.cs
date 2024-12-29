@@ -9,6 +9,7 @@ namespace AfterburnerViewerServerWin
     public class AfterburnerMeasurementsProvider : IMeasurementsProvider, IDisposable
     {
         public event EventHandler<List<AfterburnerMeasurement>>? OnNewMeasurements;
+        public event EventHandler<List<MeasurementType>>? OnNewMeasurementTypes;
         public event EventHandler<string>? OnError;
 
         public string Source { get; private set; } = string.Empty;
@@ -125,6 +126,8 @@ namespace AfterburnerViewerServerWin
 
                 if (MeasurementTypes == null || MeasurementTypes.Count == 0)
                     return;
+
+                OnNewMeasurementTypes?.Invoke(this, MeasurementTypes);
 
                 fs.Seek(-defaultBuffSize, SeekOrigin.End);
                 string? lastLine = await getLastLineAsync();
