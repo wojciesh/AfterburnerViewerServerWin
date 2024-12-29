@@ -1,3 +1,4 @@
+using AfterburnerViewerServerWin.abconfig;
 using Config.Net;
 using System.Configuration;
 using System.Diagnostics;
@@ -12,8 +13,10 @@ namespace AfterburnerViewerServerWin
     {
         private const string APPLICATION_TITLE = "AfterburnerToStreamDeck-Server v1.0";
         private const string PIPE_NAME = "ab2sd-1";
+
         private readonly IpcServer ipcServer;
-        private readonly AfterburnerMeasurementsProvider measurementsProvider;
+        private readonly IMeasurementsProvider measurementsProvider;
+        private IAfterburnerConfig? abConfigProvider;
         private readonly StringBuilder logBuffer = new();
         private readonly object lock_logBuffer = new();
 
@@ -28,6 +31,8 @@ namespace AfterburnerViewerServerWin
                 .UseJsonFile("config.json")
                 .Build();
 
+            SetAbConfig(CreateAbConfig(settings.abConfigFile));
+
             ipcServer = new IpcServer(PIPE_NAME);
             measurementsProvider = CreateMeasurementsProvider();
         }
@@ -35,9 +40,44 @@ namespace AfterburnerViewerServerWin
         private void Form1_Load(object sender, EventArgs e)
         {
             Text = APPLICATION_TITLE;
+
+            printAbConfigLoadResult();
+
+            if (abConfigProvider != null)
+                loadSourceFile();
+
             InitIpc();
             RestartIpc();
             RestartMeasurements(GetSource());
+
+
+            void loadSourceFile()
+            {
+                if (string.IsNullOrEmpty(settings.sourceFile))
+                    SetSourceFromAbConfig();
+                else
+                    SetSource(settings.sourceFile);
+
+                UpdateSourceGUI();
+            }
+
+            void printAbConfigLoadResult()
+            {
+                if (abConfigProvider != null)
+                    LogMe($"Loaded Afterburner config from {abConfigProvider.ConfigFile}");
+                else
+                {
+                    if (string.IsNullOrEmpty(settings.abConfigFile))
+                    {
+                        LogMe("-----------------------------------");
+                        LogMe("No Afterburner dir selected");
+                        LogMe("Please select the directory where Afterburner is installed");
+                        LogMe("-----------------------------------");
+                    }
+                    else
+                        LogMe($"WARNING: Can't load Afterburner config from {settings.abConfigFile}");
+                }
+            }
         }
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
@@ -47,12 +87,114 @@ namespace AfterburnerViewerServerWin
         }
 
 
-        private void toolStripButton1_Click(object sender, EventArgs e)
+        private IAfterburnerConfig? CreateAbConfig(string? abConfigFile)
         {
-            RestartIpc();
+            if (string.IsNullOrEmpty(abConfigFile))
+                return null;
+
+            try
+            {
+                return new AfterburnerConfig(abConfigFile);
+            }
+            catch (Exception ex)
+            {
+                LogMe(ex.Message);
+                return null;
+            }
         }
 
-        protected AfterburnerMeasurementsProvider CreateMeasurementsProvider()
+        protected void SetAbConfig(IAfterburnerConfig? afterburnerConfig)
+        {
+            abConfigProvider = afterburnerConfig;
+
+            settings.abConfigFile = abConfigProvider == null
+                ? string.Empty
+                : abConfigProvider.ConfigFile;
+
+            string? dir = Path.GetDirectoryName(settings.abConfigFile);
+            txtDir.Text = dir?.EndsWith("Profiles") ?? false
+                ? Path.GetFullPath(Path.Combine(dir, ".."))
+                : dir;
+        }
+
+        protected string? GetAbConfigDirFromUser()
+        {
+            dlgDir.AutoUpgradeEnabled = true;
+
+            if (dlgDir.ShowDialog() != DialogResult.OK)
+                return null;
+
+            var fn = dlgDir.SelectedPath;
+
+            txtDir.Text = fn;
+
+            return fn;
+        }
+
+
+        protected string GetSource()
+        {
+            return settings.sourceFile;
+        }
+
+        protected bool SetSource(string? sourceFile)
+        {
+            if (!measurementsProvider.IsValidSource(sourceFile))
+                return false;
+            Debug.Assert(sourceFile != null);
+            settings.sourceFile = sourceFile;
+            return true;
+        }
+
+        protected string GetSourceFileFromUser()
+        {
+            string filePath = txtFile.Text;
+
+            if (!string.IsNullOrWhiteSpace(filePath))
+            {
+                dlgOpen.InitialDirectory = Path.GetDirectoryName(filePath);
+                dlgOpen.FileName = Path.GetFileName(filePath);
+            }
+            else
+            {
+                dlgOpen.FileName = "HardwareMonitoring.hml";
+            }
+
+            if (dlgOpen.ShowDialog() != DialogResult.OK)
+                throw new InvalidOperationException("No file selected");
+
+            var fn = dlgOpen.FileName;
+
+            txtFile.Text = fn;
+
+            return fn;
+        }
+
+        protected void SetSourceFromAbConfig()
+        {
+            if (abConfigProvider?.IsConfigFileValid() ?? false)
+            {
+                SetSource(abConfigProvider.GetHistoryLogPath());
+            }
+        }
+
+        private void UpdateSourceGUI()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(() =>
+                {
+                    txtFile.Text = GetSource();
+                });
+            }
+            else
+            {
+                txtFile.Text = GetSource();
+            }
+        }
+
+
+        protected IMeasurementsProvider CreateMeasurementsProvider()
         {
             var mp = new AfterburnerMeasurementsProvider();
 
@@ -62,6 +204,40 @@ namespace AfterburnerViewerServerWin
 
             return mp;
 
+        }
+
+        protected void RestartMeasurements(string? sourceFile)
+        {
+            if (SetSource(sourceFile))
+            {
+                txtFile.Text = GetSource();
+                StartMeasurements();
+            }
+            else
+            {
+                txtFile.Clear();
+
+                if (abConfigProvider != null)
+                {
+                    LogMe("-----------------------------------------");
+                    LogMe("!!! No Afterburner History File found !!!");
+                    LogMe("Please follow these steps:");
+                    LogMe("  1. In Afterburner go to Setting -> Monitoring and enable Logging History to file");
+                    LogMe("  2. Select your History Log file in the menu above");
+                    LogMe("-----------------------------------------");
+                }
+            }
+        }
+
+        protected bool StartMeasurements()
+        {
+            measurementsProvider.Stop(false);
+            return measurementsProvider.Start(GetSource());
+        }
+
+        protected void DestroyMeasurements()
+        {
+            measurementsProvider.Dispose();
         }
 
         protected void HandleNewMeasurements(object? sender, List<AfterburnerMeasurement> measurements)
@@ -90,34 +266,21 @@ namespace AfterburnerViewerServerWin
             }
         }
 
-        protected void RestartMeasurements(string? sourceFile)
-        {
-            if (SetSource(sourceFile))
-            {
-                txtFile.Text = GetSource();
-                StartMeasurements();
-            }
-            else txtFile.Clear();
-        }
-
-        protected bool StartMeasurements()
-        {
-            measurementsProvider.Stop(false);
-            return measurementsProvider.Start(GetSource());
-        }
-
-        protected void DestroyMeasurements()
-        {
-            measurementsProvider.Dispose();
-        }
-
         protected void UpdateMeasurementPreview(string measurement)
         {
-            this.BeginInvoke(() =>
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(() =>
+                {
+                    try { txtMeasurementsPreview.Text = measurement; }
+                    catch { }
+                });
+            }
+            else
             {
                 try { txtMeasurementsPreview.Text = measurement; }
                 catch { }
-            });
+            }
         }
 
 
@@ -145,7 +308,7 @@ namespace AfterburnerViewerServerWin
 
         protected void LogMe(string msg)
         {
-            if (String.IsNullOrEmpty(msg)) return;
+            if (string.IsNullOrEmpty(msg)) return;
 
             msg = $"{DateTime.Now:HH:mm:ss} {msg}";
 
@@ -166,7 +329,7 @@ namespace AfterburnerViewerServerWin
                 logBuffer.Clear();
             }
 
-            if (String.IsNullOrEmpty(newLogs)) return;
+            if (string.IsNullOrEmpty(newLogs)) return;
 
             log.Text += newLogs;
 
@@ -175,48 +338,97 @@ namespace AfterburnerViewerServerWin
         }
 
 
+        private void btOpenDir_Click(object sender, EventArgs e)
+        {
+            string? dir = GetAbConfigDirFromUser();
+
+            if (string.IsNullOrEmpty(dir))
+                return;
+
+            SetAbConfig(CreateAbConfig(Path.Combine(
+                dir,
+                "Profiles",
+                "MSIAfterburner.cfg")));
+
+            SetSourceFromAbConfig();
+            UpdateSourceGUI();
+            RestartMeasurements(GetSource());
+        }
+
         private void btSelectSourceFile_Click(object sender, EventArgs e)
         {
-            RestartMeasurements(GetSourceFileFromUser());
-        }
+            if (txtFile.Text == abConfigProvider?.GetHistoryLogPath()
+                && MessageBox.Show(this,
+                    "It seems your current History File is matching one selected in Afterburner settings.\r\n\r\n" +
+                    "Do you still want to select other History File?",
+                    "Good question!",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question) != DialogResult.Yes)
+                return;
 
-
-        protected string GetSource()
-        {
-            return settings.source;
-        }
-
-        protected bool SetSource(string? sourceFile)
-        {
-            if (!measurementsProvider.IsValidSource(sourceFile))
-                return false;
-            Debug.Assert(sourceFile != null);
-            settings.source = sourceFile;
-            return true;
-        }
-
-        protected string? GetSourceFileFromUser()
-        {
-            string filePath = txtFile.Text;
-
-            if (!String.IsNullOrWhiteSpace(filePath))
+            try
             {
-                dlgOpen.InitialDirectory = Path.GetDirectoryName(filePath);
-                dlgOpen.FileName = Path.GetFileName(filePath);
+                RestartMeasurements(
+                    GetSourceFileFromUser());
             }
-            else
+            catch (InvalidOperationException ex)
             {
-                dlgOpen.FileName = "HardwareMonitoring.hml";
+                if (ex.Message == "No file selected")
+                    return;
+
+                LogMe(ex.Message);
             }
+            catch (Exception ex)
+            {
+                LogMe(ex.Message);
+            }
+        }
 
-            if (dlgOpen.ShowDialog() != DialogResult.OK)
-                return null;
+        private void btRestartIpc_Click(object sender, EventArgs e)
+        {
+            RestartIpc();
+        }
 
-            var fn = dlgOpen.FileName;
+        private void btCopyMeasurement_Click(object sender, EventArgs e)
+        {
+            txtMeasurementsPreview.SelectAll();
+            txtMeasurementsPreview.Copy();
+            txtMeasurementsPreview.DeselectAll();
+        }
 
-            txtFile.Text = fn;
+        private void timerABSettings_Tick(object sender, EventArgs e)
+        {
+            txtABStatus.Text = $"History Log: {toOnOffUn(abConfigProvider?.IsHistoryLogEnabled())}"
+                + $" | Recreate: {toOnOffUn(abConfigProvider?.IsRecreateHistoryLog())}"
+                + $" | Limit: {abConfigProvider?.GetHistoryLogLimit() ?? -1}";
 
-            return fn;
+            txtABStatus.BackColor = !(abConfigProvider?.IsHistoryLogEnabled() ?? false)
+                ? Color.DarkRed
+                : Color.DarkGreen;
+
+            static string toOnOffUn(bool? isOn)
+            {
+                return isOn == null
+                        ? "N/A"
+                        : isOn == true
+                            ? "ON"
+                            : "OFF";
+            }
+        }
+
+        private void btHelp_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(
+                APPLICATION_TITLE + "\r\n\r\n" +
+                "(C) github.com/wojciesh\r\n\r\n" + 
+                "USAGE:\r\n" + 
+                "1. Enable History Logging in Afterburner Settings.\r\n" +
+                "2. Select the directory where Afterburner is installed.\r\n" +
+                "History Log file will be automatically selected.\r\n\r\n" +
+                "The server will now send the measurements from Afterburner to the Stream Deck plugin.",
+                "Help",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
     }
 }

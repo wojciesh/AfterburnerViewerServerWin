@@ -3,7 +3,7 @@
     public interface IMeasurementsProvider : IDisposable
     {
         event EventHandler<List<AfterburnerMeasurement>>? OnNewMeasurements;
-        event EventHandler<String>? OnError;
+        event EventHandler<string>? OnError;
         
         string Source { get; }
 

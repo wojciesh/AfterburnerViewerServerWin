@@ -78,7 +78,7 @@ namespace AfterburnerViewerServerWin
 
         public void WriteToAllClients(string msg)
         {
-            if (String.IsNullOrEmpty(msg)) return;
+            if (string.IsNullOrEmpty(msg)) return;
 
             lock (_lock_msg)
             {
@@ -151,7 +151,7 @@ namespace AfterburnerViewerServerWin
                     Thread.Sleep(300);
                     
                     var msg = popMessageToSend();
-                    if (String.IsNullOrEmpty(msg)) 
+                    if (string.IsNullOrEmpty(msg)) 
                         continue;
 
                     writeToClient(clientPipe, msg);

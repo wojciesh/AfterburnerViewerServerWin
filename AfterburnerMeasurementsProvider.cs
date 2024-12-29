@@ -2,20 +2,24 @@
 using Config.Net;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace AfterburnerViewerServerWin
 {
     public class AfterburnerMeasurementsProvider : IMeasurementsProvider, IDisposable
     {
         public event EventHandler<List<AfterburnerMeasurement>>? OnNewMeasurements;
-        public event EventHandler<String>? OnError;
+        public event EventHandler<string>? OnError;
 
-        public string Source { get; private set; } = String.Empty;
+        public string Source { get; private set; } = string.Empty;
         
         public List<MeasurementType>? MeasurementTypes { get; private set; }
 
+        private const int SourceReadMinDelayMs = 100;
+        private const int SourceReadExceptionDelayMs = 1000;
         private volatile bool isRunning;
         private FileSystemWatcher? sourceWatcher;
+        private static readonly SemaphoreSlim _semaphore = new(1, 1);
         private bool disposedValue;
 
 
@@ -96,25 +100,40 @@ namespace AfterburnerViewerServerWin
         {
             try
             {
+                if (!await _semaphore.WaitAsync(0))
+                {
+#if DEBUG
+                    OnError?.Invoke(this, "Already reading, skipping this read.");
+#endif
+                    return;
+                }
+            } catch { return; }
+
+            try
+            {
+                Thread.Sleep(SourceReadMinDelayMs);
+#if DEBUG
+                OnError?.Invoke(this, "Reading...");
+#endif
+
                 const int defaultBuffSize = 4096;
                 using var fs = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.Read, defaultBuffSize);
                 using var sr = new StreamReader(fs, Encoding.Latin1, true, defaultBuffSize);
-                fs.Seek(0, SeekOrigin.Begin);
 
+                fs.Seek(0, SeekOrigin.Begin);
                 MeasurementTypes = AfterburnerParser.ReadMeasurementTypes(sr);
 
                 if (MeasurementTypes == null || MeasurementTypes.Count == 0)
                     return;
 
                 fs.Seek(-defaultBuffSize, SeekOrigin.End);
-
                 string? lastLine = await getLastLineAsync();
-                if (String.IsNullOrEmpty(lastLine))
+
+                if (string.IsNullOrEmpty(lastLine))
                     return;
 
                 OnNewMeasurements?.Invoke(this,
                     AfterburnerParser.ExtractMeasurements(lastLine, MeasurementTypes));
-
 
                 async Task<string?> getLastLineAsync()
                 {
@@ -123,7 +142,7 @@ namespace AfterburnerViewerServerWin
                     while (!sr.EndOfStream)
                         line = await sr.ReadLineAsync();
 
-                    line = String.IsNullOrWhiteSpace(line)
+                    line = string.IsNullOrWhiteSpace(line)
                         ? null
                         : line;
 
@@ -132,14 +151,24 @@ namespace AfterburnerViewerServerWin
             }
             catch (Exception ex)
             {
+#if DEBUG
                 OnError?.Invoke(this, ex.Message);
+#endif
+                Thread.Sleep(SourceReadExceptionDelayMs);
+            }
+            finally
+            {
+                try
+                {
+                    _semaphore.Release();
+                }
+                catch { }
             }
         }
 
-
         public bool IsValidSource(string? source)
         {
-            return !String.IsNullOrWhiteSpace(source) && File.Exists(source);
+            return !string.IsNullOrWhiteSpace(source) && File.Exists(source);
         }
 
 
@@ -152,6 +181,7 @@ namespace AfterburnerViewerServerWin
                     Stop();
                     OnNewMeasurements = null;
                     OnError = null;
+                    _semaphore.Dispose();
                 }
                 disposedValue = true;
             }
