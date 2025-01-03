@@ -2,8 +2,8 @@
 {
     public interface IMeasurementsProvider : IDisposable
     {
-        event EventHandler<String>? OnMeasurement;
-        event EventHandler<String>? OnError;
+        event EventHandler<List<AfterburnerMeasurement>>? OnNewMeasurements;
+        event EventHandler<string>? OnError;
         
         string Source { get; }
 
