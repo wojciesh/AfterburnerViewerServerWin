@@ -30,16 +30,20 @@ namespace AfterburnerViewerServerWin
             settings = new ConfigurationBuilder<IAppConfig>()
                 .UseJsonFile("config.json")
                 .Build();
-
-            SetAbConfig(CreateAbConfig(settings.abConfigFile));
-
+            
             ipcServer = new IpcServer(PIPE_NAME);
             measurementsProvider = CreateMeasurementsProvider();
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
+
             Text = APPLICATION_TITLE;
+
+            SetAbConfig(
+                CreateAbConfig(string.IsNullOrEmpty(settings.abConfigFile)
+                    ? AfterburnerConfig.DEFAULT_CONFIG_FILE
+                    : settings.abConfigFile));
 
             printAbConfigLoadResult();
 
